@@ -1,0 +1,19 @@
+[Unit]
+Description=HCD 2026 Digital Stamp Rally Device
+Wants=network-online.target
+After=network-online.target time-sync.target
+
+[Service]
+Type=simple
+User=stamp
+Group=stamp
+StateDirectory=hcd-stamp-device
+Environment=DEVICE_CONFIG=/etc/hcd-stamp-device/config.toml
+WorkingDirectory=/opt/hcd-stamp-device
+ExecStart=/opt/hcd-stamp-device/.venv/bin/hcd-stamp-device
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

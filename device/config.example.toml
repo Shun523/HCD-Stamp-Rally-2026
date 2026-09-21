@@ -1,0 +1,18 @@
+# このファイルを /etc/hcd-stamp-device/config.toml にコピーして値を設定します。
+# APIキーは設定ファイルにのみ保存し、Gitへは追加しません。
+
+[server]
+base_url = "https://example.invalid"
+api_key = "replace-with-device-api-key"
+
+[device]
+id = "dev-01"
+spot_id = "spot-01"
+
+[storage]
+queue_file = "/var/lib/hcd-stamp-device/pending-stamps.json"
+
+[hardware]
+# auto: Pi用ライブラリが利用可能なら実機、それ以外はダミー。
+# dummy: 開発PC用。pi: 実機を必須にする。
+backend = "auto"
