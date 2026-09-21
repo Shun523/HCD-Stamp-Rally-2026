@@ -1,0 +1,11 @@
+{
+  "name": "hcd-stamp-rally-2026",
+  "private": true,
+  "packageManager": "pnpm@10.26.2",
+  "scripts": {
+    "build": "pnpm --filter @hcd-stamp-rally/shared build && pnpm --filter @hcd-stamp-rally/server build",
+    "test": "pnpm --filter @hcd-stamp-rally/shared test && pnpm --filter @hcd-stamp-rally/server test",
+    "lint": "pnpm --filter @hcd-stamp-rally/shared lint && pnpm --filter @hcd-stamp-rally/server lint",
+    "typecheck": "pnpm --filter @hcd-stamp-rally/shared typecheck && pnpm --filter @hcd-stamp-rally/server typecheck"
+  }
+}
