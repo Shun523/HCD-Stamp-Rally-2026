@@ -3,9 +3,9 @@
   "private": true,
   "packageManager": "pnpm@10.26.2",
   "scripts": {
-    "build": "pnpm --filter @hcd-stamp-rally/shared build && pnpm --filter @hcd-stamp-rally/server build",
-    "test": "pnpm --filter @hcd-stamp-rally/shared test && pnpm --filter @hcd-stamp-rally/server test",
-    "lint": "pnpm --filter @hcd-stamp-rally/shared lint && pnpm --filter @hcd-stamp-rally/server lint",
-    "typecheck": "pnpm --filter @hcd-stamp-rally/shared typecheck && pnpm --filter @hcd-stamp-rally/server typecheck"
+    "build": "pnpm --filter @hcd-stamp-rally/shared build && pnpm --filter @hcd-stamp-rally/server build && pnpm --filter @hcd-stamp-rally/web build",
+    "test": "pnpm --filter @hcd-stamp-rally/shared test && pnpm --filter @hcd-stamp-rally/server test && pnpm --filter @hcd-stamp-rally/web test",
+    "lint": "pnpm --filter @hcd-stamp-rally/shared lint && pnpm --filter @hcd-stamp-rally/server lint && pnpm --filter @hcd-stamp-rally/web lint",
+    "typecheck": "pnpm --filter @hcd-stamp-rally/shared typecheck && pnpm --filter @hcd-stamp-rally/server typecheck && pnpm --filter @hcd-stamp-rally/web typecheck"
   }
 }
