@@ -7,7 +7,7 @@ import { PostgresRepository } from "./db/repository.js";
 const config = loadConfig();
 const database = createDb(config.databaseUrl);
 const repository = new PostgresRepository(database.db);
-const app = createApp({ repository, config });
+const app = createApp({ repository, config, webRoot: config.webDistDir });
 
 serve({ fetch: app.fetch, port: config.port });
 console.log(`server listening on :${config.port}`);

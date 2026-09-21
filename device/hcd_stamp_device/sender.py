@@ -124,6 +124,18 @@ class SenderWorker:
             )
         return completed
 
+    def retry_oldest_once(self) -> bool:
+        """最古のキューを一度だけ再送する。カメラなし模擬端末から使用する。"""
+
+        queued = self._queue.oldest()
+        if self._future is not None or queued is None:
+            return False
+        self._last_retry_at = self._monotonic()
+        self._future = self._executor.submit(
+            self._send, queued.token, queued.device_stamped_at, True
+        )
+        return True
+
     def shutdown(self) -> list[SendResult]:
         """送信中の一件を完了させてから停止する（仕様6-8）。"""
 

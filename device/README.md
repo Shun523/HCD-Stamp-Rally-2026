@@ -28,6 +28,20 @@ APIキーをGitへ追加しないでください。開発PCで起動する場合
 `adafruit-circuitpython-rgb-display`も導入してください。設定されるカメラは
 640×480・15fpsで、3フレームに1回だけ `cv2.QRCodeDetector` が解析します。
 
+## 模擬端末モード
+
+カメラや液晶を使わず、本番と同じHTTPクライアント・永続キューを通してトークンを
+送るモードです。ローカル結合試験で使用します。
+
+```sh
+.venv/bin/hcd-stamp-device --config config.toml --simulate-token '<押印トークン>'
+.venv/bin/hcd-stamp-device --config config.toml --simulate-resend
+```
+
+前者でサーバーへ到達できない場合は、通常の端末と同じように
+`storage.queue_file` へ一時保存します。サーバー復旧後に後者を実行すると、最古の
+未送信レコードを再送します。実機の常駐プロセスは従来どおり5秒間隔で自動再送します。
+
 ## 資産
 
 `hcd_stamp_device/assets/stamps/` に `spot-01`〜`spot-05` の仮の240×240 PNGを

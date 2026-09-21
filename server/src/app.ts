@@ -1,6 +1,7 @@
 import { randomUrlSafe, hashSecret, readAdminPassword, readDeviceApiKey, secretsEqual, SESSION_COOKIE } from "./security.js";
 import { getCookie, setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
@@ -27,6 +28,9 @@ export type AppDependencies = {
   ackTracker?: AckTracker;
   heartbeatMonitor?: HeartbeatMonitor;
   now?: () => Date;
+  webRoot?: string;
+  /** HTTPのローカルE2Eに限りfalseを渡す。本番は常にSecure Cookie。 */
+  secureCookies?: boolean;
 };
 
 const jsonError = (message: string) => ({
@@ -53,6 +57,13 @@ export function createApp(dependencies: AppDependencies) {
   const heartbeat = dependencies.heartbeatMonitor
     ?? new HeartbeatMonitor(dependencies.repository, now);
   const app = new Hono();
+  const staticAssets = dependencies.webRoot
+    ? serveStatic({ root: dependencies.webRoot })
+    : undefined;
+  const staticIndex = dependencies.webRoot
+    ? serveStatic({ root: dependencies.webRoot, path: "index.html" })
+    : undefined;
+  const secureCookies = dependencies.secureCookies ?? true;
 
   const issueSession = async (c: Context) => {
     const sessionId = randomUrlSafe();
@@ -69,7 +80,7 @@ export function createApp(dependencies: AppDependencies) {
     setCookie(c, SESSION_COOKIE, sessionId, {
       path: "/",
       httpOnly: true,
-      secure: true,
+      secure: secureCookies,
       sameSite: "Lax",
       expires: SESSION_COOKIE_EXPIRES_AT,
       maxAge,
@@ -100,12 +111,14 @@ export function createApp(dependencies: AppDependencies) {
   };
 
   // 仕様5-1: 初回アクセスでセッションを発行し、HttpOnly・Secure・SameSite=Lax Cookieを設定する。
-  app.get("/", async (c) => {
+  app.get("/", async (c, next) => {
     const existing = getSessionId(c);
     if (!existing || !(await dependencies.repository.getSession(existing))) {
       await issueSession(c);
       return c.redirect("/", 302);
     }
+    // 仕様2章: セッション発行後は同じサーバーからSPAを返し、CookieとSSEを同一オリジンにする。
+    if (staticAssets) return staticAssets(c, next);
     return c.json({ ok: true });
   });
 
@@ -290,6 +303,16 @@ export function createApp(dependencies: AppDependencies) {
       completed_count: stats.completedCount,
     });
   });
+
+  if (staticAssets && staticIndex) {
+    // Viteが出力したハッシュ付きassetをそのまま配信する。未解決のSPA画面はindex.htmlへ戻す。
+    app.all("/api", (c) => c.json(jsonError("not_found"), 404));
+    app.all("/api/*", (c) => c.json(jsonError("not_found"), 404));
+    app.use("*", staticAssets);
+    app.get("*", async (c, next) => {
+      await staticIndex(c, next);
+    });
+  }
 
   return app;
 }

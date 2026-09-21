@@ -5,6 +5,7 @@
   "scripts": {
     "build": "pnpm --filter @hcd-stamp-rally/shared build && pnpm --filter @hcd-stamp-rally/server build && pnpm --filter @hcd-stamp-rally/web build",
     "test": "pnpm --filter @hcd-stamp-rally/shared test && pnpm --filter @hcd-stamp-rally/server test && pnpm --filter @hcd-stamp-rally/web test",
+    "test:e2e": "pnpm --filter @hcd-stamp-rally/shared build && pnpm --filter @hcd-stamp-rally/web build && pnpm --filter @hcd-stamp-rally/server test:e2e",
     "lint": "pnpm --filter @hcd-stamp-rally/shared lint && pnpm --filter @hcd-stamp-rally/server lint && pnpm --filter @hcd-stamp-rally/web lint",
     "typecheck": "pnpm --filter @hcd-stamp-rally/shared typecheck && pnpm --filter @hcd-stamp-rally/server typecheck && pnpm --filter @hcd-stamp-rally/web typecheck"
   }

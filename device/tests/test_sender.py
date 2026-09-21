@@ -5,6 +5,7 @@ import unittest
 from datetime import UTC, datetime
 from pathlib import Path
 
+from hcd_stamp_device.main import resend_simulated_stamp, send_simulated_token
 from hcd_stamp_device.models import HttpResponse, NetworkError, SendOutcome, StampRequest
 from hcd_stamp_device.queue import PersistentStampQueue, QueuedStamp
 from hcd_stamp_device.sender import SenderWorker, classify_response
@@ -88,3 +89,24 @@ class SenderTests(unittest.TestCase):
             self.assertTrue(worker.submit_detected("one", timestamp))
             self.assertFalse(worker.submit_detected("two", timestamp))
             worker.shutdown()
+
+    def test_camera_less_simulation_persists_then_resends_after_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PersistentStampQueue(Path(directory) / "pending.json")
+            api = FakeApi(
+                [
+                    NetworkError("offline"),
+                    HttpResponse(200, {"result": "stamped", "stamp_count": 1}),
+                ]
+            )
+
+            saved = send_simulated_token(api, queue, "dev-01", "token-1")
+            self.assertEqual(saved.outcome, SendOutcome.TEMPORARILY_SAVED)
+            self.assertEqual(len(queue), 1)
+
+            resent = resend_simulated_stamp(api, queue, "dev-01")
+            self.assertIsNotNone(resent)
+            assert resent is not None
+            self.assertEqual(resent.outcome, SendOutcome.STAMPED)
+            self.assertTrue(resent.from_queue)
+            self.assertEqual(len(queue), 0)

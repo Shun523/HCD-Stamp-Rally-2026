@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.git/
+.env
+.env.*
+device/.venv/
+device/.mypy_cache/
+device/.pytest_cache/
+device/.ruff_cache/
+playwright-report/
+test-results/

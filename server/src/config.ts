@@ -10,6 +10,7 @@ export type ServerConfig = {
   port: number;
   adminPassword: string;
   ackTimeoutMs: number;
+  webDistDir: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -18,5 +19,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     port: Number(env.PORT ?? 8787),
     adminPassword: env.ADMIN_PASSWORD ?? "",
     ackTimeoutMs: Number(env.ACK_TIMEOUT_MS ?? DEFAULT_ACK_TIMEOUT_MS),
+    // 仕様2章: Webのビルド成果物はサーバーと同じオリジンから配信する。
+    webDistDir: env.WEB_DIST_DIR ?? "web/dist",
   };
 }
