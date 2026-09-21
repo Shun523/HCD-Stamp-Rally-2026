@@ -11,6 +11,17 @@ export type HeartbeatMemory = {
   batteryLevel: number | null;
 };
 
+const JAPAN_OFFSET_MS = 9 * 60 * 60 * 1_000;
+
+function startOfJapanDay(value: Date): Date {
+  const shifted = new Date(value.getTime() + JAPAN_OFFSET_MS);
+  return new Date(Date.UTC(
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate(),
+  ) - JAPAN_OFFSET_MS);
+}
+
 export class HeartbeatMonitor {
   private readonly memory = new Map<string, HeartbeatMemory>();
 
@@ -42,10 +53,16 @@ export class HeartbeatMonitor {
   }
 
   public async list() {
-    const dbDevices = await this.repository.listDevices();
-    const now = this.now().getTime();
+    const current = this.now();
+    const [dbDevices, ackTimeouts] = await Promise.all([
+      this.repository.listDevices(),
+      this.repository.getAckTimeoutsByDevice(startOfJapanDay(current)),
+    ]);
+    const ackTimeoutByDevice = new Map(ackTimeouts.map((summary) => [summary.deviceId, summary]));
+    const now = current.getTime();
     return dbDevices.map((device) => {
       const memory = this.memory.get(device.id);
+      const ackTimeout = ackTimeoutByDevice.get(device.id);
       const lastHeartbeatAt = memory?.receivedAt ?? device.lastHeartbeatAt ?? null;
       const age = lastHeartbeatAt ? now - lastHeartbeatAt.getTime() : Number.POSITIVE_INFINITY;
       const status = age > HEARTBEAT_DISCONNECTED_AFTER_MS
@@ -59,6 +76,8 @@ export class HeartbeatMonitor {
         lastStampCount: memory?.lastStampCount ?? 0,
         pendingQueueCount: memory?.pendingQueueCount ?? 0,
         batteryLevel: memory?.batteryLevel ?? null,
+        ackTimeoutCount: ackTimeout?.count ?? 0,
+        lastAckTimeoutAt: ackTimeout?.lastTimedOutAt ?? null,
       };
     });
   }

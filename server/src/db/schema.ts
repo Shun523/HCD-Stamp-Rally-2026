@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   real,
   serial,
@@ -40,6 +41,7 @@ export const spots = pgTable("spots", {
   descriptionEn: text("description_en").notNull(),
   locationNoteJa: text("location_note_ja"),
   locationNoteEn: text("location_note_en"),
+  isSample: boolean("is_sample").notNull().default(true),
 });
 
 // 仕様8章・5-3: session_id × spot_id はDB側でも一意にする。
@@ -62,6 +64,7 @@ export const deliveries = pgTable("deliveries", {
   sessionId: varchar("session_id", { length: 64 }).notNull().references(() => sessions.id, { onDelete: "cascade" }),
   deliveredAt: timestampWithTimezone("delivered_at"),
   ackedAt: timestampWithTimezone("acked_at"),
+  ackTimedOutAt: timestampWithTimezone("ack_timed_out_at"),
   result: varchar("result", { length: 32 }).notNull().default("pending"),
 });
 

@@ -13,6 +13,7 @@ export const spotSchema = z.object({
   description_en: z.string(),
   location_note_ja: z.string().nullable(),
   location_note_en: z.string().nullable(),
+  is_sample: z.boolean(),
 });
 
 export const meResponseSchema = z.object({
@@ -43,6 +44,12 @@ export const stampResponseSchema = z.object({
   total_spots: z.number().int().positive(),
   completed: z.boolean(),
   event_id: z.string().optional(),
+  delivery: z.object({
+    ack_received: z.boolean(),
+    server_save_ms: z.number().nonnegative(),
+    sse_publish_ms: z.number().nonnegative(),
+    ack_wait_ms: z.number().nonnegative(),
+  }).optional(),
 });
 
 export const ackRequestSchema = z.object({
@@ -70,6 +77,8 @@ export const deviceStatusSchema = z.object({
   last_stamp_count: z.number().int().nonnegative(),
   pending_queue_count: z.number().int().nonnegative(),
   battery_level: z.number().nullable(),
+  ack_timeout_count: z.number().int().nonnegative(),
+  last_ack_timeout_at: isoTimestamp.nullable(),
 });
 
 export const adminDevicesResponseSchema = z.object({

@@ -16,6 +16,7 @@ export const sampleSpots = [1, 2, 3, 4, 5].map((number) => ({
   descriptionEn: `Guide for spot ${number} (sample)`,
   locationNoteJa: null,
   locationNoteEn: null,
+  isSample: true,
 }));
 
 const keyHash = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -35,6 +36,7 @@ const main = async () => {
         descriptionEn: sql`excluded.description_en`,
         locationNoteJa: sql`excluded.location_note_ja`,
         locationNoteEn: sql`excluded.location_note_en`,
+        isSample: sql`excluded.is_sample`,
       },
     });
 

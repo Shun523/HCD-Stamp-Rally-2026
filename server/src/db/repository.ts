@@ -1,4 +1,4 @@
-import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNotNull, isNull, max, sql } from "drizzle-orm";
 import type { AppDb } from "./client.js";
 import {
   deliveries,
@@ -46,6 +46,12 @@ export type HeartbeatState = {
   batteryLevel: number | null;
 };
 
+export type AckTimeoutSummary = {
+  deviceId: string;
+  count: number;
+  lastTimedOutAt: Date;
+};
+
 export interface Repository {
   createSession(input: NewSession): Promise<void>;
   getSession(id: string): Promise<typeof sessions.$inferSelect | undefined>;
@@ -55,11 +61,13 @@ export interface Repository {
   getStampsForSession(sessionId: string): Promise<Array<{ spotId: string; stampedAt: Date }>>;
   createStamp(input: NewStampInput): Promise<StampResult | undefined>;
   markDelivered(eventId: string): Promise<void>;
+  markAckTimedOut(eventId: string, timedOutAt: Date): Promise<void>;
   ackEvent(eventId: string, sessionId: string): Promise<boolean>;
   healthCheck(): Promise<void>;
   getDevice(deviceId: string): Promise<typeof devices.$inferSelect | undefined>;
   updateHeartbeat(state: HeartbeatState): Promise<void>;
   listDevices(): Promise<typeof devices.$inferSelect[]>;
+  getAckTimeoutsByDevice(since: Date): Promise<AckTimeoutSummary[]>;
   getStats(): Promise<{
     participantCount: number;
     stampCountBySpot: Array<{ spotId: string; count: number }>;
@@ -125,6 +133,9 @@ export class PostgresRepository implements Repository {
         where: eq(spots.id, device.spotId),
       });
       if (!spotRowDirect) return undefined;
+
+      // 仕様5-3/8章: 同一セッションの同時押印を直列化し、訪問順序の重複を防ぐ。
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${tokenRow.sessionId}, 0))`);
 
       const orderRows = await tx
         .select({ count: count() })
@@ -198,6 +209,13 @@ export class PostgresRepository implements Repository {
     }).where(eq(deliveries.eventId, eventId));
   }
 
+  public async markAckTimedOut(eventId: string, timedOutAt: Date): Promise<void> {
+    await this.db.update(deliveries).set({
+      ackTimedOutAt: timedOutAt,
+      result: "timeout",
+    }).where(eq(deliveries.eventId, eventId));
+  }
+
   public async ackEvent(eventId: string, sessionId: string): Promise<boolean> {
     const rows = await this.db.update(deliveries).set({
       ackedAt: new Date(),
@@ -227,6 +245,27 @@ export class PostgresRepository implements Repository {
 
   public async listDevices() {
     return this.db.select().from(devices).orderBy(asc(devices.id));
+  }
+
+  public async getAckTimeoutsByDevice(since: Date): Promise<AckTimeoutSummary[]> {
+    const rows = await this.db
+      .select({
+        deviceId: stamps.deviceId,
+        count: count(deliveries.eventId),
+        lastTimedOutAt: max(deliveries.ackTimedOutAt),
+      })
+      .from(deliveries)
+      .innerJoin(stamps, eq(stamps.id, deliveries.stampId))
+      .where(and(
+        isNotNull(deliveries.ackTimedOutAt),
+        gte(deliveries.ackTimedOutAt, since),
+      ))
+      .groupBy(stamps.deviceId);
+    return rows.flatMap((row) => row.lastTimedOutAt ? [{
+      deviceId: row.deviceId,
+      count: Number(row.count),
+      lastTimedOutAt: row.lastTimedOutAt,
+    }] : []);
   }
 
   public async getStats() {

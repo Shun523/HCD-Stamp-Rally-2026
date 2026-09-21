@@ -10,6 +10,7 @@ import type { ServerType } from "@hono/node-server";
 import { expect, test } from "@playwright/test";
 import { createApp } from "../../src/app.js";
 import { SESSION_COOKIE } from "../../src/security.js";
+import { SseHub } from "../../src/sse.js";
 import { MemoryRepository } from "../support/memory-repository.js";
 
 const execFile = promisify(execFileCallback);
@@ -82,8 +83,10 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
     );
   }
 
+  const hub = new SseHub();
   const app = createApp({
     repository,
+    hub,
     config: { ackTimeoutMs: 1_000 },
     webRoot: "../web/dist",
     secureCookies: false,
@@ -133,11 +136,14 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
     // 仕様6-7: サーバー停止中の押印は端末側ファイルキューへ保存し、復旧後に再送する。
     const port = running.port;
     await stopServer(running.server);
+    await expect.poll(() => hub.connectionCount(sessionId), { timeout: 10_000 }).toBe(0);
     await simulateDevice(configPaths[1]!, "--simulate-token", token);
     const queued = JSON.parse(await readFile(join(temporaryDirectory, "pending-2.json"), "utf8")) as unknown[];
     expect(queued).toHaveLength(1);
 
     running = await startServer(app.fetch, port);
+    // 仕様4-4: 再接続はバックオフ付きのため、SSEが張り直されたことを確かめてから再送する。
+    await expect.poll(() => hub.connectionCount(sessionId), { timeout: 15_000 }).toBeGreaterThan(0);
     await simulateDevice(configPaths[1]!, "--simulate-resend");
     await closeAnimation();
     await expect(page.locator(".stamp-slot.is-stamped")).toHaveCount(2);

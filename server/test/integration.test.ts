@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { createDb } from "../src/db/client.js";
@@ -21,8 +22,8 @@ integration("PostgreSQL persistence", () => {
     const deviceId = `integration-device-${suffix}`;
     const spotId = `integration-spot-${suffix}`;
     try {
-      const migration = await readFile(new URL("../drizzle/0000_jazzy_vision.sql", import.meta.url), "utf8");
-      await sql.unsafe(migration);
+      // 仕様8章: 本番と同じdrizzleのマイグレータを使い、適用済みのDBでも再実行できるようにする。
+      await migrate(db, { migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)) });
       await db.insert(spots).values({
         id: spotId,
         nameJa: "統合テスト",

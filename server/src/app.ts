@@ -1,4 +1,5 @@
 import { randomUrlSafe, hashSecret, readAdminPassword, readDeviceApiKey, secretsEqual, SESSION_COOKIE } from "./security.js";
+import { performance } from "node:perf_hooks";
 import { getCookie, setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
 import { serveStatic } from "@hono/node-server/serve-static";
@@ -28,6 +29,8 @@ export type AppDependencies = {
   ackTracker?: AckTracker;
   heartbeatMonitor?: HeartbeatMonitor;
   now?: () => Date;
+  monotonicNow?: () => number;
+  logger?: Pick<Console, "info" | "warn">;
   webRoot?: string;
   /** HTTPのローカルE2Eに限りfalseを渡す。本番は常にSecure Cookie。 */
   secureCookies?: boolean;
@@ -48,6 +51,8 @@ const parseJson = async <Schema extends z.ZodTypeAny>(request: Request, schema: 
 
 export function createApp(dependencies: AppDependencies) {
   const now = dependencies.now ?? (() => new Date());
+  const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
+  const logger = dependencies.logger ?? console;
   const config = {
     ackTimeoutMs: dependencies.config?.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS,
     adminPassword: dependencies.config?.adminPassword ?? "",
@@ -67,7 +72,8 @@ export function createApp(dependencies: AppDependencies) {
 
   const issueSession = async (c: Context) => {
     const sessionId = randomUrlSafe();
-    const token = randomUrlSafe();
+    // 仕様4-2/5-2: 128bitを保ちつつ、75px QR向けに約22文字へ抑える。
+    const token = randomUrlSafe(16);
     const current = now();
     await dependencies.repository.createSession({
       id: sessionId,
@@ -155,6 +161,7 @@ export function createApp(dependencies: AppDependencies) {
       description_en: spot.descriptionEn,
       location_note_ja: spot.locationNoteJa,
       location_note_en: spot.locationNoteEn,
+      is_sample: spot.isSample,
     })) });
   });
 
@@ -187,6 +194,7 @@ export function createApp(dependencies: AppDependencies) {
 
   // 仕様5-3/5-5: APIキー認証後に期限・トークン・スポットを検証し、DB一意制約で冪等に保存する。
   app.post("/api/stamp", async (c) => {
+    const requestStartedAt = monotonicNow();
     const raw = await parseJson(c.req.raw, stampRequestSchema);
     if (!raw) return c.json(jsonError("invalid_request"), 400);
     if (!(await requireDevice(c, raw.device_id))) {
@@ -206,6 +214,7 @@ export function createApp(dependencies: AppDependencies) {
       deviceStampedAt,
       eventId,
     });
+    const savedAt = monotonicNow();
     if (!result) return c.json(jsonError("invalid_token"), 404);
 
     if (result.result === "already" || !result.eventId) {
@@ -227,10 +236,25 @@ export function createApp(dependencies: AppDependencies) {
       total_spots: result.totalSpots,
       completed: result.completed,
     };
+    const ackWaitStartedAt = monotonicNow();
     const ackWait = ackTracker.wait(result.eventId, config.ackTimeoutMs);
     const subscribers = hub.publishStamped(result.sessionId, stampedEvent);
+    const publishedAt = monotonicNow();
     if (subscribers > 0) await dependencies.repository.markDelivered(result.eventId);
-    await ackWait;
+    const ackReceived = await ackWait;
+    const finishedAt = monotonicNow();
+    const delivery = {
+      ack_received: ackReceived,
+      server_save_ms: Math.max(0, Math.round(savedAt - requestStartedAt)),
+      sse_publish_ms: Math.max(0, Math.round(publishedAt - savedAt)),
+      ack_wait_ms: Math.max(0, Math.round(finishedAt - ackWaitStartedAt)),
+    };
+    if (!ackReceived) {
+      await dependencies.repository.markAckTimedOut(result.eventId, now());
+      logger.warn("stamp ACK timed out", { eventId: result.eventId, deviceId: raw.device_id, ...delivery });
+    } else {
+      logger.info("stamp ACK received", { eventId: result.eventId, deviceId: raw.device_id, ...delivery });
+    }
     return c.json({
       result: "stamped",
       spot_id: result.spotId,
@@ -238,6 +262,7 @@ export function createApp(dependencies: AppDependencies) {
       stamp_count: result.stampCount,
       total_spots: result.totalSpots,
       completed: result.completed,
+      delivery,
     });
   });
 
@@ -291,6 +316,8 @@ export function createApp(dependencies: AppDependencies) {
       last_stamp_count: device.lastStampCount,
       pending_queue_count: device.pendingQueueCount,
       battery_level: device.batteryLevel,
+      ack_timeout_count: device.ackTimeoutCount,
+      last_ack_timeout_at: device.lastAckTimeoutAt?.toISOString() ?? null,
     })) });
   });
 

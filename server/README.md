@@ -47,4 +47,4 @@ docker build -t hcd-stamp-rally:local .
 
 Cloud Runへの設定手順と当日チェックリストは [../docs/deploy.md](../docs/deploy.md) を参照してください。
 
-`drizzle/0000_initial.sql` は仕様8章の全テーブルを作り、全テーブルでRLSを有効化します。ポリシーは作成しません。サーバー接続はDB所有者として行うため、APIからの直接アクセスはありません。
+`drizzle/` のマイグレーションは仕様8章の全テーブルを作り、全テーブルでRLSを有効化します。スキーマを変えたら `pnpm --filter @hcd-stamp-rally/server db:generate` で追加のマイグレーションを生成してください。ポリシーは作成しません。サーバー接続はDB所有者として行うため、APIからの直接アクセスはありません。

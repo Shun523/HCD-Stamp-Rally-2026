@@ -19,6 +19,7 @@ export const memorySpots: Spot[] = [1, 2, 3, 4, 5].map((number) => ({
   descriptionEn: "Guide",
   locationNoteJa: null,
   locationNoteEn: null,
+  isSample: true,
 }));
 
 /** 実DBを使わないAPI/E2E試験用の永続化モデル。 */
@@ -26,7 +27,7 @@ export class MemoryRepository implements Repository {
   public readonly sessions = new Map<string, Session>();
   public readonly tokens = new Map<string, StampToken>();
   public readonly stamps: Stamp[] = [];
-  public readonly deliveries = new Map<string, { sessionId: string; acked: boolean }>();
+  public readonly deliveries = new Map<string, { sessionId: string; deviceId: string; acked: boolean; timedOutAt: Date | null }>();
   public readonly devices = new Map<string, Device>([
     ["dev-01", {
       id: "dev-01",
@@ -125,7 +126,7 @@ export class MemoryRepository implements Repository {
       visitOrder: currentCount + 1,
     };
     this.stamps.push(stamp);
-    this.deliveries.set(input.eventId, { sessionId: token.sessionId, acked: false });
+    this.deliveries.set(input.eventId, { sessionId: token.sessionId, deviceId: input.deviceId, acked: false, timedOutAt: null });
     return {
       result: "stamped",
       sessionId: token.sessionId,
@@ -142,6 +143,11 @@ export class MemoryRepository implements Repository {
 
   public async markDelivered(_eventId: string) {
     void _eventId;
+  }
+
+  public async markAckTimedOut(eventId: string, timedOutAt: Date) {
+    const delivery = this.deliveries.get(eventId);
+    if (delivery) delivery.timedOutAt = timedOutAt;
   }
 
   public async ackEvent(eventId: string, sessionId: string) {
@@ -169,6 +175,17 @@ export class MemoryRepository implements Repository {
 
   public async listDevices() {
     return [...this.devices.values()];
+  }
+
+  public async getAckTimeoutsByDevice(since: Date) {
+    return [...this.devices.values()].flatMap((device) => {
+      const timedOut = [...this.deliveries.values()].filter((delivery) =>
+        delivery.timedOutAt && delivery.timedOutAt >= since
+        && delivery.deviceId === device.id);
+      const lastTimedOutAt = timedOut.reduce<Date | null>((latest, delivery) =>
+        !latest || (delivery.timedOutAt && delivery.timedOutAt > latest) ? delivery.timedOutAt : latest, null);
+      return lastTimedOutAt ? [{ deviceId: device.id, count: timedOut.length, lastTimedOutAt }] : [];
+    });
   }
 
   public async getStats() {

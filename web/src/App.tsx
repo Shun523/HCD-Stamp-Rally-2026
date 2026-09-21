@@ -82,6 +82,7 @@ export function ParticipantApp() {
     id: `spot-${String(number).padStart(2, "0")}`,
     name_ja: `スポット${number}（サンプル）`, name_en: `Spot ${number} (Sample)`, display_order: number,
     lat: 0, lng: 0, description_ja: "", description_en: "", location_note_ja: null, location_note_en: null,
+    is_sample: true,
   }));
 
   const body = (() => {
