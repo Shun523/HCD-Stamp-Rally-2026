@@ -12,6 +12,9 @@
   --color-purple-soft: #F4EEFB;
   --color-yellow: #FFD84D;
   --color-pink: #FDE3E8;
+  --color-paper: #FFFCF3;
+  --color-watermark-line: #F1DAD4;
+  --color-watermark-fill: #F4E4DF;
   --color-board: #CFE8B8;
   --color-road: #F3D29B;
   --color-tree: #7DBB5E;
@@ -32,6 +35,7 @@
   --text-shadow-outline: 3px 0 0 var(--color-ink), -3px 0 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 -3px 0 var(--color-ink), 2px 2px 0 var(--color-ink), -2px 2px 0 var(--color-ink), 2px -2px 0 var(--color-ink), -2px -2px 0 var(--color-ink), 0 5px 0 var(--color-ink);
   --text-shadow-outline-surface: 2px 0 0 var(--color-surface), -2px 0 0 var(--color-surface), 0 2px 0 var(--color-surface), 0 -2px 0 var(--color-surface);
   --border-dashed-purple: 4px dashed var(--color-purple);
+  --border-prize-cut: 3px dashed var(--color-ink);
   --border-heavy: 5px solid var(--color-ink);
   --border-status-healthy: 6px solid var(--color-tree);
   --border-status-alert: 6px solid var(--color-coral-strong);
@@ -60,6 +64,7 @@
   /* 動き */
   --duration-press: 80ms;
   --duration-popup: 160ms;
+  --duration-qr-reveal: 40ms;
   --duration-stamp: 280ms;
   --ease-stamp: cubic-bezier(0.2, 1.4, 0.4, 1);
 }

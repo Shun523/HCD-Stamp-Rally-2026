@@ -119,19 +119,19 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
       sameSite: "Lax",
     }]);
     await page.goto(`http://127.0.0.1:${running.port}/`);
-    await expect(page.getByRole("heading", { name: "遊び方（サンプル）" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "スタンプラリー" })).toBeVisible();
     await page.getByRole("button", { name: "はじめる" }).click();
-    await expect(page.getByRole("heading", { name: "電子スタンプ帳" })).toBeVisible();
+    await expect(page.locator("[data-stamp-card]")).toBeVisible();
     await page.waitForTimeout(250);
 
-    const closeAnimation = async () => {
+    const closeAnimation = async (completed = false) => {
       await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
-      await page.getByRole("dialog").getByRole("button", { name: "閉じる" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: completed ? "ゴールへ" : "とじる" }).click();
     };
 
     await simulateDevice(configPaths[0]!, "--simulate-token", token);
     await closeAnimation();
-    await expect(page.locator(".stamp-slot.is-stamped")).toHaveCount(1);
+    await expect(page.locator('[data-card-stamp-slot][data-stamped="true"]')).toHaveCount(1);
 
     // 仕様6-7: サーバー停止中の押印は端末側ファイルキューへ保存し、復旧後に再送する。
     const port = running.port;
@@ -146,14 +146,15 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
     await expect.poll(() => hub.connectionCount(sessionId), { timeout: 15_000 }).toBeGreaterThan(0);
     await simulateDevice(configPaths[1]!, "--simulate-resend");
     await closeAnimation();
-    await expect(page.locator(".stamp-slot.is-stamped")).toHaveCount(2);
+    await expect(page.locator('[data-card-stamp-slot][data-stamped="true"]')).toHaveCount(2);
 
-    for (let index = 3; index <= 5; index += 1) {
+    for (let index = 3; index <= 4; index += 1) {
       await simulateDevice(configPaths[index - 1]!, "--simulate-token", token);
       await closeAnimation();
     }
-    await expect(page.getByRole("heading", { name: "完走おめでとうございます！" })).toBeVisible();
-    await expect(page.locator(".goal")).toBeVisible();
+    await simulateDevice(configPaths[4]!, "--simulate-token", token);
+    await closeAnimation(true);
+    await expect(page.getByRole("heading", { name: "おめでとう!" })).toBeVisible();
   } finally {
     await stopServer(running.server).catch(() => undefined);
     await rm(temporaryDirectory, { recursive: true, force: true });

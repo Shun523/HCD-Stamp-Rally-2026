@@ -1,0 +1,52 @@
+.card {
+  --card-slot-column: 100px;
+  --card-slot-diameter: 84px;
+  position: relative;
+  box-sizing: border-box;
+  width: min(calc(100% - var(--space-2)), 350px);
+  justify-self: start;
+  padding: var(--space-4) var(--space-2) var(--space-2);
+  overflow: visible;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  border: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+  align-items: start;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+  border-bottom: var(--border-thin);
+}
+
+.titleBlock { min-width: 0; }
+.eyebrow { margin: 0; color: var(--color-coral-strong); font-size: 12px; font-weight: 900; letter-spacing: 0.18em; line-height: 1.4; }
+.header h2 { margin: var(--space-1) 0 0; font-family: var(--font-display); font-size: 22px; line-height: 1.2; }
+.eventName { margin: 0; color: var(--color-muted); font-size: 12px; font-weight: 800; line-height: 1.35; text-align: right; }
+
+.instructions { margin: var(--space-3) var(--space-2) var(--space-4); color: var(--color-muted); font-size: 12px; font-weight: 800; line-height: 1.5; }
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 var(--space-2);
+}
+
+@media (max-width: 359px) {
+  .card {
+    --card-slot-column: 92px;
+    --card-slot-diameter: 76px;
+    padding-right: var(--space-1);
+    padding-left: var(--space-1);
+  }
+
+  .header { padding-right: var(--space-1); padding-left: var(--space-1); }
+  .instructions { margin-right: var(--space-1); margin-left: var(--space-1); }
+  .slots { gap: 6px; padding-right: var(--space-1); padding-left: var(--space-1); }
+}

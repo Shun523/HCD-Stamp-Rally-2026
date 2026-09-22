@@ -57,25 +57,3 @@
   font-size: 18px;
   line-height: 1;
 }
-
-.goal {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-content: center;
-  place-items: center;
-  gap: 0;
-  padding: var(--space-1);
-  color: var(--color-surface);
-  background: var(--color-ink);
-  border: var(--border);
-  border-radius: 50%;
-  font-family: var(--font-body);
-  line-height: 1.1;
-  text-align: center;
-}
-
-.goal strong { font-size: 14px; }
-.goal small { font-size: 11px; font-weight: 800; }
-.complete { color: var(--color-ink); background: var(--color-yellow); box-shadow: var(--shadow-md); cursor: pointer; transition: transform var(--duration-press), box-shadow var(--duration-press); }
-.complete:active { box-shadow: none; transform: translate(5px, 5px); }

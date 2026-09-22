@@ -9,5 +9,6 @@
 }
 
 .scrolled { border-bottom: var(--border); }
+.qrActive { z-index: 40; }
 .topRow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .language { font-size: 12px; font-weight: 900; line-height: 1; }

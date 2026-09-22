@@ -1,0 +1,103 @@
+.stub {
+  position: relative;
+  margin: var(--space-4) -8px -8px;
+  background: var(--color-paper);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+
+.cutLine {
+  position: relative;
+  height: 3px;
+  border-top: var(--border-prize-cut);
+}
+
+.scissors {
+  position: absolute;
+  inset: -8px auto auto var(--space-4);
+  display: grid;
+  width: 28px;
+  height: 20px;
+  place-items: center;
+  color: var(--color-ink);
+  background: var(--color-paper);
+}
+
+.notch {
+  position: absolute;
+  z-index: 2;
+  top: -12px;
+  display: block;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  background: var(--color-bg);
+  border: var(--border);
+  border-radius: var(--radius-circle);
+}
+
+.leftNotch { left: -12px; clip-path: inset(0 0 0 50%); }
+.rightNotch { right: -12px; clip-path: inset(0 50% 0 0); }
+
+.content {
+  display: grid;
+  min-height: 96px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2) var(--space-3);
+}
+
+.copy { min-width: 0; }
+.eyebrow { margin: 0; color: var(--color-coral-strong); font-size: 12px; font-weight: 900; letter-spacing: 0.14em; line-height: 1.4; }
+.message { margin: var(--space-1) 0 0; font-size: 13px; font-weight: 800; line-height: 1.45; }
+
+.goalBadge {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  place-content: center;
+  place-items: center;
+  color: var(--color-surface);
+  background: var(--color-ink);
+  border-radius: var(--radius-circle);
+  line-height: 1;
+  text-align: center;
+}
+
+.goalBadge strong { font-family: var(--font-display); font-size: 13px; line-height: 1.1; }
+.goalBadge small { margin-top: var(--space-1); font-size: 12px; font-weight: 800; line-height: 1.1; }
+
+.complete { background: var(--color-yellow); }
+.complete .scissors { background: var(--color-paper); }
+.complete .eyebrow { font-family: var(--font-display); font-size: 22px; letter-spacing: 0; line-height: 1.1; }
+
+.goalButton {
+  display: inline-flex;
+  min-width: 84px;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-surface);
+  background: var(--color-coral-strong);
+  border: var(--border);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  transition: transform var(--duration-press), box-shadow var(--duration-press);
+}
+
+.goalButton:active { box-shadow: none; transform: translate(5px, 5px); }
+
+@media (max-width: 359px) {
+  .content { min-height: 92px; padding-right: var(--space-1); padding-left: var(--space-1); }
+  .message { font-size: 12px; }
+  .goalBadge { width: 68px; height: 68px; flex-basis: 68px; }
+  .goalButton { min-width: 76px; }
+}

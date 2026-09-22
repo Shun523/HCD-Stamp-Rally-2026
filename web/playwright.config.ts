@@ -1,4 +1,7 @@
 import { defineConfig } from "@playwright/test";
+import { fileURLToPath } from "node:url";
+
+const webDirectory = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   fullyParallel: false,
@@ -12,6 +15,7 @@ export default defineConfig({
   },
   webServer: {
     command: "pnpm build && pnpm exec vite preview --host 127.0.0.1 --port 4173",
+    cwd: webDirectory,
     port: 4173,
     reuseExistingServer: false,
     timeout: 60_000,

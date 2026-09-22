@@ -1,4 +1,4 @@
-import { Flag, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { useState } from "react";
 import { stampAssetPath } from "../../data/stamps.js";
 import styles from "./StampParts.module.css";
@@ -28,9 +28,4 @@ export function StampSlot({ label, spotId }: { label: string; spotId: string }) 
 
 export function ProgressBadge({ count, total = 5 }: { count: number; total?: number }) {
   return <span aria-label={`${count}/${total}`} className={styles.progressBadge}>{count}/{total}</span>;
-}
-
-export function GoalMedallion({ complete, label, lockedCaption = "5こで完走", onOpen }: { complete: boolean; label: string; lockedCaption?: string; onOpen: () => void }) {
-  if (complete) return <button aria-label={label} className={[styles.goal, styles.complete].join(" ")} type="button" onClick={onOpen}><Flag aria-hidden="true" size={26} strokeWidth={2.25} /><strong>COMPLETE</strong></button>;
-  return <span aria-label={label} className={styles.goal}><Flag aria-hidden="true" size={26} strokeWidth={2.25} /><strong>GOAL</strong><small>{lockedCaption}</small></span>;
 }
