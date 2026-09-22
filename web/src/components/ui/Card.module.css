@@ -1,0 +1,8 @@
+.card {
+  border: var(--border);
+  border-radius: var(--radius-card);
+}
+
+.surface { color: var(--color-ink); background: var(--color-surface); box-shadow: var(--shadow-lg); }
+.board { color: var(--color-ink); background: var(--color-board); box-shadow: var(--shadow-lg); }
+.band { color: var(--color-ink); background: var(--color-pink); box-shadow: var(--shadow-md); }

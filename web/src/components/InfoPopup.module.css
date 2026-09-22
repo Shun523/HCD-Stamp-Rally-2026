@@ -1,0 +1,9 @@
+.steps { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: flex-start; gap: var(--space-3); }
+.steps span { padding-top: var(--space-1); }
+.hint { margin: var(--space-4) 0 0; color: var(--color-muted); font-size: 14px; line-height: 1.6; }
+.body { margin: 0; font-size: 16px; line-height: 1.7; }
+.details { display: grid; gap: var(--space-3); margin: 0; }
+.details div { display: grid; gap: var(--space-1); }
+.details dt { color: var(--color-muted); font-size: 12px; font-weight: 800; line-height: 1.4; }
+.details dd { margin: 0; font-size: 16px; line-height: 1.7; }

@@ -1,0 +1,15 @@
+.page { display: grid; width: min(calc(100% - 40px), 430px); gap: var(--space-5); margin: 0 auto; padding: var(--space-6) 0 calc(var(--space-8) + env(safe-area-inset-bottom)); }
+.titleRow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.outlined { min-width: 0; margin: 0; color: var(--color-coral); font-family: var(--font-display); font-size: 34px; line-height: 1.15; text-shadow: 3px 0 0 var(--color-ink), -3px 0 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 -3px 0 var(--color-ink), 2px 2px 0 var(--color-ink), -2px 2px 0 var(--color-ink), 2px -2px 0 var(--color-ink), -2px -2px 0 var(--color-ink), 0 5px 0 var(--color-ink); }
+.board { position: relative; width: min(100%, 340px); margin: 0 auto; padding: var(--space-4); aspect-ratio: 1; }
+.road { position: absolute; inset: 0; width: 100%; height: 100%; }
+.roadInk { stroke: var(--color-ink); stroke-width: 9; }
+.roadFill { stroke: var(--color-road); stroke-width: 6.6; }
+.roadDash { stroke: var(--color-surface); stroke-dasharray: 1.8 2.4; stroke-width: 0.6; }
+.slot { position: absolute; width: 25%; aspect-ratio: 1; transform: translate(-50%, -50%); }
+.goal { position: absolute; inset: 35% 35%; }
+.tree { position: absolute; z-index: 1; width: 12%; aspect-ratio: 1; background: var(--color-tree); border: var(--border-thin); border-radius: 50%; }
+.treeOne { inset: 11% auto auto 12%; }.treeTwo { inset: auto 10% 13% auto; }.treeThree { inset: auto auto 17% 11%; }
+.hint { margin: 0; color: var(--color-muted); font-size: 14px; line-height: 1.6; text-align: center; }
+.infoTiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+@media (max-width: 359px) { .page { width: min(calc(100% - 24px), 430px); }.outlined { font-size: 29px; }.infoTiles { gap: var(--space-2); } }

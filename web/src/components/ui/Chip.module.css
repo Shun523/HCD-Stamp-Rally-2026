@@ -1,0 +1,16 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-thin);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+.yellow { color: var(--color-ink); background: var(--color-yellow); }
+.surface { color: var(--color-ink); background: var(--color-surface); }

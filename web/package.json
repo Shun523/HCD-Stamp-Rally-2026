@@ -9,16 +9,20 @@
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:screenshots": "PLAYWRIGHT_BROWSERS_PATH=0 playwright test -c playwright.config.ts"
   },
   "dependencies": {
     "@hcd-stamp-rally/shared": "workspace:*",
+    "lucide-react": "^0.468.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.15.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.38.0",

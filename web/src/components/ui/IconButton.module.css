@@ -1,0 +1,18 @@
+.button {
+  display: inline-grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  padding: 0;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: var(--border-thin);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-press), box-shadow var(--duration-press);
+}
+
+.button:active {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}

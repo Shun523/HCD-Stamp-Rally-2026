@@ -1,0 +1,30 @@
+.nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  transition: transform var(--duration-press);
+}
+
+.tab + .tab { border-inline-start: var(--border); }
+.active { color: var(--color-surface); background: var(--color-coral-strong); }
+.tab:active { transform: translateY(3px); }

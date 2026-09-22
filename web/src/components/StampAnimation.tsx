@@ -1,22 +1,17 @@
 import type { StampedEvent } from "@hcd-stamp-rally/shared";
 import type { Copy } from "../data/content.js";
-import { stampAssetPath } from "../data/stamps.js";
+import { Button } from "./ui/Button.js";
+import { Card } from "./ui/Card.js";
+import { ProgressBadge, StampImage } from "./ui/StampParts.js";
+import styles from "./StampAnimation.module.css";
 
-type Props = {
-  event: StampedEvent;
-  copy: Copy;
-  onClose: () => void;
-};
+type Props = { copy: Copy; event: StampedEvent; onClose: () => void; onGoal: () => void; spotName: string };
 
-export function StampAnimation({ event, copy, onClose }: Props) {
+export function StampAnimation({ copy, event, onClose, onGoal, spotName }: Props) {
+  const action = event.completed ? onGoal : onClose;
   return (
-    <section className="overlay" role="dialog" aria-modal="true" aria-labelledby="stamp-earned-title">
-      <div className="animation-card">
-        <img className="earned-stamp" src={stampAssetPath(event.spot_id)} alt="" />
-        <h2 id="stamp-earned-title">{copy.earned}</h2>
-        <p>{copy.earnedCount.replace("{count}", String(event.stamp_count))}</p>
-        <button className="button" type="button" onClick={onClose}>{copy.close}</button>
-      </div>
+    <section aria-labelledby="stamp-earned-title" aria-modal="true" className={styles.overlay} role="dialog">
+      <Card className={styles.card}><StampImage alt="" spotId={event.spot_id} /><h2 id="stamp-earned-title" className={styles.outlined}>{copy.earnedTitle}</h2><p>{spotName}</p><ProgressBadge count={event.stamp_count} total={event.total_spots} /><Button fullWidth type="button" onClick={action}>{event.completed ? copy.goToGoal : copy.close}</Button></Card>
     </section>
   );
 }

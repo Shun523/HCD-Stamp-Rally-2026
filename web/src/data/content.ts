@@ -3,103 +3,124 @@ export type Language = "ja" | "en";
 export const content = {
   isSample: true,
   prizeExchange: {
-    ja: "景品交換所（サンプル）",
-    en: "Prize exchange desk (Sample)",
+    ja: { name: "景品交換所（サンプル）", location: "［会場内の場所（サンプル）］", hours: "［受付時間（サンプル）］" },
+    en: { name: "Prize exchange desk (Sample)", location: "[Venue location (Sample)]", hours: "[Reception hours (Sample)]" },
   },
   copy: {
     ja: {
-      eventName: "岡山大学ホームカミングデー スタンプラリー",
-      language: "English",
+      eventChip: "HOMECOMING DAY 2026",
+      switchLanguage: "English",
+      tabBook: "スタンプ帳",
+      tabMap: "マップ",
+      tabSponsors: "協賛企業",
       start: "はじめる",
-      howToPlay: "遊び方（サンプル）",
-      steps: ["スタンプ帳を開く", "5か所のスタンプ機を探す", "QRを押し当ててスタンプを集める"],
+      close: "とじる",
+      backToBook: "スタンプ帳にもどる",
       browserNotice: "スタンプはこのブラウザに保存されます。別のアプリやブラウザで開くと最初からになります",
-      stampMachinePhoto: "スタンプ機（仮画像）",
-      stampBook: "電子スタンプ帳",
-      progress: "{count} / 5 個獲得",
-      map: "スポット地図・一覧",
-      mapUnavailable: "Google Mapsを表示できません。スポット一覧をご確認ください。",
-      recovery: "スタンプが消えた方へ",
+      introTitle: "スタンプラリー",
+      introPhoto: "スタンプ機の写真（サンプル）",
+      introSteps: ["スタンプ帳の紫の番号をタップしてQRを出す", "スポットにあるスタンプ機を、QRに押し当てる", "機械の画面に絵柄が出たらスタンプGET"],
+      bookTitle: "スタンプラリー",
+      bookHint: "紫の番号をタップすると、機械に押し当てるQRが出ます。どこから回ってもOK",
+      progress: "{count}/5",
       showQr: "QRを表示",
-      qrInstruction: "このQRを機械に押し当ててください",
-      brightness: "画面の明るさを上げてください",
-      close: "閉じる",
-      earned: "スタンプ獲得！",
-      earnedCount: "{count} 個集めました",
-      goalTitle: "完走おめでとうございます！",
-      goalMessage: "5つのスタンプを集めました。景品交換所でこの画面をスタッフに見せてください。",
-      prize: "景品交換所",
-      backToBook: "スタンプ帳へ戻る",
+      goalLocked: "5こで完走",
+      goalOpen: "ゴールページを開く",
+      howToPlay: "遊び方",
+      prizes: "景品交換所の案内",
+      recovery: "スタンプが消えた方へ",
+      popupHowTitle: "遊び方",
+      popupHowHint: "5つのスポットを、どの順番で回ってもかまいません。5つ集めるとゴールです。",
+      popupPrizeTitle: "景品交換所の案内",
+      popupPrizeHint: "5つ集めたら、ゴールページをスタッフに見せてください。",
+      popupRecoveryTitle: "スタンプが消えてしまった方へ",
+      popupRecoveryBody: "スタンプは、このスタンプラリーを開いたブラウザに保存されています。LINE などのアプリから開き直したり、別のブラウザで開いたりすると、最初からの表示になります。最初に開いたときと同じ方法で開き直してみてください。",
+      popupRecoveryHint: "それでも戻らない場合は、スタッフに声をかけてください。",
+      prizeName: "景品交換所の名称",
+      prizeLocation: "場所",
+      prizeHours: "受付時間",
+      qrTag: "ここでやること",
+      qrTitle: "QRに機械を押し当てる",
+      qrBubble: "ここ!",
+      qrSteps: ["画面の明るさを最大にする", "押し当てたまま少し待つ", "機械の画面に絵柄が出たら完了"],
+      earnedTitle: "スタンプGET!",
+      earnedCount: "{count}こ 集めました",
+      goToGoal: "ゴールへ",
+      goalStamp: "完走",
+      goalTitle: "おめでとう!",
+      goalHint: "5つのスポットをぜんぶ回りました",
+      goalShowStaff: "この画面をスタッフに見せてね",
+      mapTitle: "マップ",
+      mapHint: "スポットの場所を確認して、好きな順番で回ろう。",
+      mapUnavailable: "Google Mapsを表示できません。スポット一覧をご確認ください。",
       spots: "スポット（サンプル）",
-      stamped: "押印済み",
+      stamped: "GET!",
       notStamped: "未押印",
-      recoveryTitle: "スタンプが消えた方へ",
-      recoveryBody: "ブラウザのCookieやサイトデータが消えると、スタンプを復旧できません。お近くのスタッフへご相談ください。",
-      back: "戻る",
+      sponsorsTitle: "協賛企業",
+      sponsorsHint: "このスタンプラリーは、次の企業・団体のご協賛により開催しています。",
+      loading: "読み込み中…",
+      sessionError: "スタンプ帳を更新できませんでした。通信を確認してください。",
+      spotsError: "スポット情報を取得できませんでした。",
     },
     en: {
-      eventName: "Okayama University Homecoming Day Stamp Rally",
-      language: "日本語",
+      eventChip: "HOMECOMING DAY 2026",
+      switchLanguage: "日本語",
+      tabBook: "Stamps",
+      tabMap: "Map",
+      tabSponsors: "Sponsors",
       start: "Start",
-      howToPlay: "How to play (Sample)",
-      steps: ["Open your stamp book", "Find the five stamp stations", "Hold up your QR code to collect stamps"],
-      browserNotice: "Your stamps are saved in this browser. If you open this in another app or browser, you will start over.",
-      stampMachinePhoto: "Stamp station (placeholder)",
-      stampBook: "Digital stamp book",
-      progress: "{count} / 5 collected",
-      map: "Spot map & list",
-      mapUnavailable: "Google Maps is unavailable. The spot list is still available.",
-      recovery: "Lost your stamps?",
-      showQr: "Show QR code",
-      qrInstruction: "Hold this QR code up to the stamp station.",
-      brightness: "Please turn up your screen brightness.",
       close: "Close",
-      earned: "Stamp collected!",
-      earnedCount: "You have collected {count} stamps",
-      goalTitle: "Congratulations!",
-      goalMessage: "You collected all five stamps. Show this screen to a staff member at the prize exchange desk.",
-      prize: "Prize exchange",
       backToBook: "Back to stamp book",
+      browserNotice: "Your stamps are saved in this browser. If you open this in another app or browser, you will start over.",
+      introTitle: "STAMP RALLY",
+      introPhoto: "Stamp station photo (Sample)",
+      introSteps: ["Tap a purple number in the stamp book to show your QR code", "Hold your phone's QR code to a stamp station", "When a design appears on the station, you got the stamp"],
+      bookTitle: "STAMP RALLY",
+      bookHint: "Tap a purple number to show the QR code for the stamp station. Visit in any order!",
+      progress: "{count}/5",
+      showQr: "Show QR code",
+      goalLocked: "Complete 5",
+      goalOpen: "Open goal page",
+      howToPlay: "How to play",
+      prizes: "Prizes",
+      recovery: "Lost stamps?",
+      popupHowTitle: "How to play",
+      popupHowHint: "You can visit the five spots in any order. Collect all five to reach the goal.",
+      popupPrizeTitle: "Prize exchange",
+      popupPrizeHint: "After collecting all five stamps, show the goal page to a staff member.",
+      popupRecoveryTitle: "Lost your stamps?",
+      popupRecoveryBody: "Stamps are saved in the browser where you opened this stamp rally. Reopening it from an app such as LINE, or from another browser, will show a fresh start. Please try opening it in the same way you first used.",
+      popupRecoveryHint: "If your stamps still do not return, please ask a staff member for help.",
+      prizeName: "Prize exchange desk",
+      prizeLocation: "Location",
+      prizeHours: "Reception hours",
+      qrTag: "WHAT TO DO",
+      qrTitle: "HOLD YOUR QR TO THE STATION",
+      qrBubble: "HERE!",
+      qrSteps: ["Turn your screen brightness all the way up", "Hold it in place for a moment", "You are done when the station shows a design"],
+      earnedTitle: "STAMP GET!",
+      earnedCount: "{count} stamps collected",
+      goToGoal: "Go to goal",
+      goalStamp: "COMPLETE",
+      goalTitle: "Congratulations!",
+      goalHint: "You visited all five spots.",
+      goalShowStaff: "Show this screen to staff",
+      mapTitle: "Map",
+      mapHint: "Check the spots and visit in any order.",
+      mapUnavailable: "Google Maps is unavailable. The spot list is still available.",
       spots: "Spots (Sample)",
-      stamped: "Collected",
+      stamped: "GET!",
       notStamped: "Not collected",
-      recoveryTitle: "Lost your stamps?",
-      recoveryBody: "Stamps cannot be restored if your browser cookies or site data were deleted. Please ask a nearby staff member for help.",
-      back: "Back",
+      sponsorsTitle: "Sponsors",
+      sponsorsHint: "This stamp rally is made possible by the following companies and organizations.",
+      loading: "Loading…",
+      sessionError: "We could not update your stamp book. Please check your connection.",
+      spotsError: "We could not load spot information.",
     },
   },
 } as const;
 
-export type Copy = {
-  eventName: string;
-  language: string;
-  start: string;
-  howToPlay: string;
-  steps: readonly string[];
-  browserNotice: string;
-  stampMachinePhoto: string;
-  stampBook: string;
-  progress: string;
-  map: string;
-  mapUnavailable: string;
-  recovery: string;
-  showQr: string;
-  qrInstruction: string;
-  brightness: string;
-  close: string;
-  earned: string;
-  earnedCount: string;
-  goalTitle: string;
-  goalMessage: string;
-  prize: string;
-  backToBook: string;
-  spots: string;
-  stamped: string;
-  notStamped: string;
-  recoveryTitle: string;
-  recoveryBody: string;
-  back: string;
-};
+export type Copy = (typeof content.copy)[Language];
 
 export function detectInitialLanguage(languages: readonly string[] = navigator.languages): Language {
   return languages.some((language) => language.toLowerCase().startsWith("ja")) ? "ja" : "en";

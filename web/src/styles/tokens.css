@@ -1,0 +1,65 @@
+:root {
+  color-scheme: light;
+
+  /* 色 */
+  --color-bg: #FFF7EA;
+  --color-surface: #FFFFFF;
+  --color-ink: #231815;
+  --color-muted: #6B5147;
+  --color-coral: #F0555C;
+  --color-coral-strong: #D6333F;
+  --color-purple: #6A3FA0;
+  --color-purple-soft: #F4EEFB;
+  --color-yellow: #FFD84D;
+  --color-pink: #FDE3E8;
+  --color-board: #CFE8B8;
+  --color-road: #F3D29B;
+  --color-tree: #7DBB5E;
+  --color-stamp: #E4414B;
+  --color-backdrop: rgb(35 24 21 / 0.55);
+  --color-transparent: transparent;
+
+  /* 枠線と影（影はぼかさない） */
+  --border: 3px solid var(--color-ink);
+  --border-thin: 2px solid var(--color-ink);
+  --shadow-sm: 3px 3px 0 var(--color-ink);
+  --shadow-md: 5px 5px 0 var(--color-ink);
+  --shadow-lg: 8px 8px 0 var(--color-ink);
+  --shadow-none: none;
+  --shadow-inset-surface-sm: inset 0 0 0 3px var(--color-surface);
+  --shadow-inset-surface-md: inset 0 0 0 4px var(--color-surface);
+  --shadow-coral-lg: 8px 8px 0 var(--color-coral-strong);
+  --text-shadow-outline: 3px 0 0 var(--color-ink), -3px 0 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 -3px 0 var(--color-ink), 2px 2px 0 var(--color-ink), -2px 2px 0 var(--color-ink), 2px -2px 0 var(--color-ink), -2px -2px 0 var(--color-ink), 0 5px 0 var(--color-ink);
+  --text-shadow-outline-surface: 2px 0 0 var(--color-surface), -2px 0 0 var(--color-surface), 0 2px 0 var(--color-surface), 0 -2px 0 var(--color-surface);
+  --border-dashed-purple: 4px dashed var(--color-purple);
+  --border-heavy: 5px solid var(--color-ink);
+  --border-status-healthy: 6px solid var(--color-tree);
+  --border-status-alert: 6px solid var(--color-coral-strong);
+  --border-none: 0;
+
+  /* 角丸 */
+  --radius-card: 18px;
+  --radius-button: 14px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* 余白（4の倍数） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* 文字 */
+  --font-display: 'Mochiy Pop One', 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif;
+  --font-body: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+
+  /* 動き */
+  --duration-press: 80ms;
+  --duration-popup: 160ms;
+  --duration-stamp: 280ms;
+  --ease-stamp: cubic-bezier(0.2, 1.4, 0.4, 1);
+}

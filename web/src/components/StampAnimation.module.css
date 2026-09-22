@@ -1,0 +1,4 @@
+.overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: var(--space-5); background: var(--color-bg); }
+.card { display: grid; width: min(100%, 400px); justify-items: center; gap: var(--space-4); padding: var(--space-6); text-align: center; animation: stamp-pop var(--duration-stamp) var(--ease-stamp); }.card > img, .card > span:first-child { width: 160px; height: 160px; }.card h2, .card p { margin: 0; }.card p { font-size: 20px; font-weight: 900; }
+.outlined { color: var(--color-coral); font-family: var(--font-display); font-size: 34px; line-height: 1.15; text-shadow: 3px 0 0 var(--color-ink), -3px 0 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 -3px 0 var(--color-ink), 2px 2px 0 var(--color-ink), -2px 2px 0 var(--color-ink), 2px -2px 0 var(--color-ink), -2px -2px 0 var(--color-ink), 0 5px 0 var(--color-ink); }
+@keyframes stamp-pop { from { transform: scale(1.4) rotate(-8deg); } to { transform: scale(1) rotate(0); } }

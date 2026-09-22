@@ -1,0 +1,37 @@
+.sparkle { width: 28px; height: 28px; }
+.sparkle path { stroke: var(--color-ink); stroke-width: 1.5px; }
+.yellow path { fill: var(--color-yellow); }
+.coral path { fill: var(--color-coral); }
+.purple path { fill: var(--color-purple); }
+
+.speechBubble {
+  position: relative;
+  display: inline-flex;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-surface);
+  background: var(--color-coral-strong);
+  border: var(--border-thin);
+  border-radius: var(--radius-button);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.speechBubble::after {
+  position: absolute;
+  inset: auto auto -10px 50%;
+  width: 14px;
+  height: 14px;
+  content: '';
+  background: var(--color-coral-strong);
+  border-right: var(--border-thin);
+  border-bottom: var(--border-thin);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.cropMarks { position: absolute; inset: 0; pointer-events: none; }
+.cropMarks i { position: absolute; width: 28px; height: 28px; border-color: var(--color-ink); border-style: solid; border-width: 0; }
+.cropMarks i:nth-child(1) { inset: var(--space-3) auto auto var(--space-3); border-top-width: 5px; border-left-width: 5px; }
+.cropMarks i:nth-child(2) { inset: var(--space-3) var(--space-3) auto auto; border-top-width: 5px; border-right-width: 5px; }
+.cropMarks i:nth-child(3) { inset: auto auto var(--space-3) var(--space-3); border-bottom-width: 5px; border-left-width: 5px; }
+.cropMarks i:nth-child(4) { inset: auto var(--space-3) var(--space-3) auto; border-right-width: 5px; border-bottom-width: 5px; }
