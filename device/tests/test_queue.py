@@ -25,3 +25,7 @@ class QueueTests(unittest.TestCase):
             self.assertEqual(recovered.oldest(), QueuedStamp("token-1", older))
             self.assertTrue(recovered.remove("token-1"))
             self.assertEqual(PersistentStampQueue(path).oldest(), QueuedStamp("token-2", newer))
+
+            self.assertTrue(recovered.clear())
+            self.assertFalse(recovered.clear())
+            self.assertEqual(len(PersistentStampQueue(path)), 0)

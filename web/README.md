@@ -23,6 +23,10 @@ PLAYWRIGHT_BROWSERS_PATH=0 pnpm --filter @hcd-stamp-rally/web exec playwright in
 
 開発時に別オリジンのサーバーへ接続する場合は `VITE_API_BASE_URL` にそのURLを設定します。Google Mapsを有効にする場合だけ `VITE_GOOGLE_MAPS_API_KEY` を設定します。キーが未設定、またはMapsの読み込みに失敗した場合は、スポット一覧だけを表示します。これらの値は `.env` に置き、コミットしません。
 
+`/admin` は共有パスワードで管理APIを検証してから表示します。機器状態、未送信キュー、
+ACK未到達、参加・完走状況を30秒ごとに更新し、要対応機は固定アラートと音または
+ブラウザ通知で知らせます。
+
 ## コンテンツと画像の差し替え
 
 画面文言、景品交換所の案内、サンプルフラグは [src/data/content.ts](src/data/content.ts) にあります。本番化時は文言を差し替え、`isSample` を `false` にしてください。

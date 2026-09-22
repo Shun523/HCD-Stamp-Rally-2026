@@ -10,7 +10,7 @@ type Props = {
   remaining: number;
 };
 
-// design-stamp-card 4-3: 台紙の一部として見せる、切り取り線付きの景品引換券。
+// デザイン4-1: 台紙の一部として見せる、切り取り線付きの景品引換券。
 export function PrizeStub({ complete, copy, onGoal, remaining }: Props) {
   const lockedGoal = translate(copy.goalLocked, { count: remaining });
   return (

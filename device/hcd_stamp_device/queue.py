@@ -81,6 +81,16 @@ class PersistentStampQueue:
             self._persist()
             return True
 
+    def clear(self) -> bool:
+        """全件を削除し、空の状態を永続化する（仕様6-7）。"""
+
+        with self._lock:
+            if not self._items:
+                return False
+            self._items.clear()
+            self._persist()
+            return True
+
     def __len__(self) -> int:
         with self._lock:
             return len(self._items)

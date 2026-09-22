@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -48,11 +49,13 @@ def send_simulated_token(
     queue: PersistentStampQueue,
     device_id: str,
     token: str,
+    *,
+    wall_clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> SendResult:
     """指定トークンを一度送信し、通信不能なら既存キューへ保存する（仕様6-3/6-7）。"""
 
-    worker = SenderWorker(api, queue, device_id)
-    if not worker.submit_detected(token, datetime.now(UTC)):
+    worker = SenderWorker(api, queue, device_id, wall_clock=wall_clock)
+    if not worker.submit_detected(token, wall_clock()):
         raise RuntimeError("模擬端末の送信ワーカーを開始できませんでした")
     return worker.shutdown()[0]
 
@@ -61,10 +64,12 @@ def resend_simulated_stamp(
     api: DeviceApi,
     queue: PersistentStampQueue,
     device_id: str,
+    *,
+    wall_clock: Callable[[], datetime] = lambda: datetime.now(UTC),
 ) -> SendResult | None:
     """再起動後の端末を模して、最古の永続化キューを一度だけ再送する（仕様6-7）。"""
 
-    worker = SenderWorker(api, queue, device_id)
+    worker = SenderWorker(api, queue, device_id, wall_clock=wall_clock)
     if not worker.retry_oldest_once():
         worker.shutdown()
         return None

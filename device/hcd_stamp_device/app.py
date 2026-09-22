@@ -51,7 +51,14 @@ class StampDeviceApp:
         self._wall_clock = wall_clock
         self._sleeper = sleeper
         self._logger = logger or logging.getLogger(__name__)
-        self._sender = SenderWorker(api, queue, device_id, monotonic=monotonic, logger=self._logger)
+        self._sender = SenderWorker(
+            api,
+            queue,
+            device_id,
+            monotonic=monotonic,
+            wall_clock=wall_clock,
+            logger=self._logger,
+        )
         self._last_stamp_count = 0
         self._heartbeat = HeartbeatReporter(
             api,

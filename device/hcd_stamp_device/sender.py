@@ -6,13 +6,15 @@ import logging
 import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .http_client import DeviceApi
 from .models import HttpResponse, NetworkError, SendOutcome, SendResult, StampRequest
 from .queue import PersistentStampQueue, QueuedStamp
 
 RETRY_INTERVAL_SECONDS = 5.0
+# 仕様6-7: 日本時間の11月1日0時。ここを越えたキューは再送せず全消去する。
+QUEUE_CLEAR_AT = datetime(2026, 10, 31, 15, 0, tzinfo=UTC)
 
 
 def classify_response(response: HttpResponse) -> SendOutcome:
@@ -45,16 +47,32 @@ class SenderWorker:
         *,
         logger: logging.Logger | None = None,
         monotonic: Callable[[], float] = time.monotonic,
+        wall_clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self._api = api
         self._queue = queue
         self._device_id = device_id
         self._logger = logger or logging.getLogger(__name__)
         self._monotonic = monotonic
+        self._wall_clock = wall_clock
         # 仕様6-3: カメラ表示を止めない、最大一件だけの送信ワーカー。
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="stamp-sender")
         self._future: Future[SendResult] | None = None
         self._last_retry_at = float("-inf")
+        self._clear_expired_queue()
+
+    def _clear_expired_queue(self) -> bool:
+        """11月1日になった時点で、再送待ちを一括して破棄する。"""
+
+        current = self._wall_clock()
+        if current.tzinfo is None:
+            raise ValueError("wall_clock はタイムゾーン付きdatetimeを返す必要があります")
+        if current < QUEUE_CLEAR_AT:
+            return False
+        cleared = self._queue.clear()
+        if cleared:
+            self._logger.info("運用日を過ぎたため、未送信キューを全件削除しました")
+        return cleared
 
     @property
     def busy(self) -> bool:
@@ -64,6 +82,7 @@ class SenderWorker:
     def submit_detected(self, token: str, detected_at: datetime) -> bool:
         """新規読み取りを送信する。送信中なら仕様どおり受け付けない。"""
 
+        self._clear_expired_queue()
         if self.busy:
             return False
         self._future = self._executor.submit(self._send, token, detected_at, False)
@@ -92,7 +111,7 @@ class SenderWorker:
             )
 
         # 仕様6-7: 一時保存のみ積み、再送済みの成功/対象外4xxはキューから除く。
-        if result.outcome is SendOutcome.TEMPORARILY_SAVED:
+        if result.outcome is SendOutcome.TEMPORARILY_SAVED and self._wall_clock() < QUEUE_CLEAR_AT:
             self._queue.enqueue(QueuedStamp(token=token, device_stamped_at=detected_at))
         elif from_queue:
             self._queue.remove(token)
@@ -106,6 +125,7 @@ class SenderWorker:
         """完了結果を回収し、空いていれば古いキューを5秒間隔で再送する。"""
 
         completed: list[SendResult] = []
+        self._clear_expired_queue()
         if self._future is not None and self._future.done():
             completed.append(self._future.result())
             self._future = None
@@ -127,6 +147,7 @@ class SenderWorker:
     def retry_oldest_once(self) -> bool:
         """最古のキューを一度だけ再送する。カメラなし模擬端末から使用する。"""
 
+        self._clear_expired_queue()
         queued = self._queue.oldest()
         if self._future is not None or queued is None:
             return False

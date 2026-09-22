@@ -5,7 +5,7 @@ import {
   meResponseSchema,
   spotsResponseSchema,
 } from "@hcd-stamp-rally/shared";
-import type { DeviceStatus } from "@hcd-stamp-rally/shared";
+import type { AdminDevicesResponse, AdminStatsResponse } from "@hcd-stamp-rally/shared";
 
 export class ApiError extends Error {
   public constructor(public readonly status: number, message: string) {
@@ -13,13 +13,6 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
-
-export type AdminDevicesResponse = { devices: DeviceStatus[] };
-export type AdminStatsResponse = {
-  participant_count: number;
-  stamp_count_by_spot: Array<{ spot_id: string; count: number }>;
-  completed_count: number;
-};
 
 type Fetcher = typeof fetch;
 

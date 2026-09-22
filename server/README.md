@@ -23,6 +23,16 @@ TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
 
 `DATABASE_URL` はSupabaseのSession modeプーラー接続文字列を環境変数で渡します。機体キーは `DEVICE_KEYS_JSON` に指定し、キーそのものはコミットしません。管理APIは `X-Admin-Password`、機体APIは `Authorization: Bearer <device-key>` で認証します。
 
+ローカルで管理画面を確認する場合は、先にWebをビルドして共有パスワードを指定します。
+
+```sh
+pnpm --filter @hcd-stamp-rally/web build
+PORT=8799 ADMIN_PASSWORD=change-me pnpm --filter @hcd-stamp-rally/server dev
+```
+
+通常の押印受付は10月31日16:00までです。16:00までの `device_stamped_at` を持つ
+オフライン再送だけは10月31日中に受理し、日本時間の11月1日0:00以降は拒否します。
+
 ## 結合E2E
 
 リポジトリ直下で、Webをビルドしてから次の1コマンドを実行します。

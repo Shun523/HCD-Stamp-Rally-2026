@@ -25,7 +25,7 @@ type Props = {
   spotName: string;
 };
 
-// design-stamp-card 3章: CSSの破線ではなく、台紙とQR表示で共有するSVGの円を使う。
+// デザイン4-1/4-2: CSSの破線ではなく、台紙とQR表示で共有するSVGの円を使う。
 export function StampSlotDottedCircle({ className }: { className?: string }) {
   return (
     <svg aria-hidden="true" className={[styles.dottedCircle, className ?? ""].filter(Boolean).join(" ")} preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -48,7 +48,7 @@ function WearMarks() {
   return <span aria-hidden="true" className={styles.wearMarks}><i /><i /><i /><i /><i /></span>;
 }
 
-// 仕様4-2 / design-stamp-card 4-2: 台紙だけで使う、丸い押印欄。
+// 仕様4-2 / デザイン4-1: 台紙だけで使う、丸い押印欄。
 export function CardStampSlot({ activeQrOrigin = false, emptyLabel, number, onOpenQr, slotRef, stampHere, stamped, stampedLabel, spotId, spotName }: Props) {
   const circleRef = useRef<HTMLSpanElement>(null);
   const accessibleLabel = `${spotName} ${number}: ${stamped ? stampedLabel : emptyLabel}`;

@@ -92,6 +92,7 @@ export const adminStatsResponseSchema = z.object({
     count: z.number().int().nonnegative(),
   })),
   completed_count: z.number().int().nonnegative(),
+  sample_spots_active: z.boolean(),
 });
 
 export const stampedEventSchema = z.object({
@@ -109,4 +110,6 @@ export type StampRequest = z.infer<typeof stampRequestSchema>;
 export type StampResponse = z.infer<typeof stampResponseSchema>;
 export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>;
 export type DeviceStatus = z.infer<typeof deviceStatusSchema>;
+export type AdminDevicesResponse = z.infer<typeof adminDevicesResponseSchema>;
+export type AdminStatsResponse = z.infer<typeof adminStatsResponseSchema>;
 export type StampedEvent = z.infer<typeof stampedEventSchema>;

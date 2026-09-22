@@ -19,7 +19,7 @@ type Props = {
   stampedSpotIds: ReadonlySet<string>;
 };
 
-// 仕様4-1 / design-stamp-card 4-1: 上段3・下段2の丸い押印欄を持つ1枚の台紙。
+// 仕様4-1 / デザイン4-1: 上段3・下段2の丸い押印欄を持つ1枚の台紙。
 export function StampCard({ activeQrSpotId, copy, focusReturnSpotId, focusReturnToHeading = false, language, onFocusReturnHandled, onGoal, onQr, spots, stampedSpotIds }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const slotElements = useRef(new Map<string, HTMLElement>());

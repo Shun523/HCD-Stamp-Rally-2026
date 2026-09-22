@@ -14,6 +14,7 @@ import {
 import {
   DEFAULT_ACK_TIMEOUT_MS,
   EVENT_END_AT,
+  OFFLINE_RESEND_END_AT,
   SESSION_COOKIE_EXPIRES_AT,
   SSE_PING_INTERVAL_MS,
   type ServerConfig,
@@ -201,12 +202,21 @@ export function createApp(dependencies: AppDependencies) {
       return c.json(jsonError("unauthorized"), 401);
     }
     const current = now();
+    const deviceStampedAt = raw.device_stamped_at ? new Date(raw.device_stamped_at) : null;
     const token = await dependencies.repository.getToken(raw.token);
-    if (!token || current > EVENT_END_AT) {
+    const deviceTimeIsInEvent = deviceStampedAt === null || deviceStampedAt <= EVENT_END_AT;
+    const isDuringEvent = current <= EVENT_END_AT && deviceTimeIsInEvent;
+    const isValidSameDayRetry = token !== undefined
+      && current > EVENT_END_AT
+      && current < OFFLINE_RESEND_END_AT
+      && deviceStampedAt !== null
+      && deviceStampedAt >= token.issuedAt
+      && deviceStampedAt <= EVENT_END_AT;
+    // 仕様5-2/6-7: 16時以降も当日中は、16時までに読み取ったオフライン押印だけを受理する。
+    if (!token || (!isDuringEvent && !isValidSameDayRetry)) {
       return c.json(jsonError("invalid_token"), 404);
     }
     const eventId = `evt_${randomUrlSafe(18)}`;
-    const deviceStampedAt = raw.device_stamped_at ? new Date(raw.device_stamped_at) : null;
     const result = await dependencies.repository.createStamp({
       token: raw.token,
       deviceId: raw.device_id,
@@ -323,11 +333,15 @@ export function createApp(dependencies: AppDependencies) {
 
   app.get("/api/admin/stats", async (c) => {
     if (!requireAdmin(c)) return c.json(jsonError("unauthorized"), 401);
-    const stats = await dependencies.repository.getStats();
+    const [stats, spots] = await Promise.all([
+      dependencies.repository.getStats(),
+      dependencies.repository.getSpots(),
+    ]);
     return c.json({
       participant_count: stats.participantCount,
       stamp_count_by_spot: stats.stampCountBySpot.map((row) => ({ spot_id: row.spotId, count: row.count })),
       completed_count: stats.completedCount,
+      sample_spots_active: spots.some((spot) => spot.isSample),
     });
   });
 

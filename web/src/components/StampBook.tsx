@@ -19,7 +19,7 @@ type Props = {
   stampedSpotIds: ReadonlySet<string>;
 };
 
-// 仕様4-1 / design-stamp-card 5章: 台紙だけを主役にし、案内ボタンは台紙の外に置く。
+// 仕様4-1 / デザイン4-1: 台紙だけを主役にし、案内ボタンは台紙の外に置く。
 export function StampBook({ activeQrSpotId, copy, focusReturnSpotId, focusReturnToHeading, isQrActive = false, language, onFocusReturnHandled, onGoal, onInfo, onQr, spots, stampedSpotIds }: Props) {
   return (
     <main aria-hidden={isQrActive || undefined} className={styles.page} data-qr-active={isQrActive || undefined} inert={isQrActive}>

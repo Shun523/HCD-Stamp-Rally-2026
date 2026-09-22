@@ -239,6 +239,64 @@ describe("server API", () => {
     expect(repository.stamps).toHaveLength(1);
   });
 
+  it("accepts a pre-16:00 offline stamp during October 31 and rejects it on November 1", async () => {
+    const repository = new MemoryRepository();
+    let current = new Date("2026-10-31T15:00:00+09:00");
+    const app = createTestApp(repository, () => current);
+    const cookie = sessionCookie(await app.request("/", { redirect: "manual" }));
+    const me = await app.request("/api/me", { headers: { cookie } });
+    const token = (await me.json() as { token: string }).token;
+    current = new Date("2026-10-31T16:30:00+09:00");
+    const headers = {
+      authorization: "Bearer device-key",
+      "content-type": "application/json",
+    };
+    const accepted = await app.request("/api/stamp", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        token,
+        device_id: "dev-01",
+        device_stamped_at: "2026-10-31T15:59:59+09:00",
+      }),
+    });
+    expect(accepted.status).toBe(200);
+    expect(repository.stamps[0]?.stampedAt.toISOString()).toBe("2026-10-31T06:59:59.000Z");
+
+    current = new Date("2026-11-01T00:00:00+09:00");
+    const rejected = await app.request("/api/stamp", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        token,
+        device_id: "dev-01",
+        device_stamped_at: "2026-10-31T15:59:59+09:00",
+      }),
+    });
+    expect(rejected.status).toBe(404);
+    expect(repository.stamps).toHaveLength(1);
+  });
+
+  it("rejects a stamp first read after 16:00 even during October 31", async () => {
+    const repository = new MemoryRepository();
+    let current = new Date("2026-10-31T15:00:00+09:00");
+    const app = createTestApp(repository, () => current);
+    const cookie = sessionCookie(await app.request("/", { redirect: "manual" }));
+    const me = await app.request("/api/me", { headers: { cookie } });
+    const token = (await me.json() as { token: string }).token;
+    current = new Date("2026-10-31T16:30:00+09:00");
+    const response = await app.request("/api/stamp", {
+      method: "POST",
+      headers: { authorization: "Bearer device-key", "content-type": "application/json" },
+      body: JSON.stringify({
+        token,
+        device_id: "dev-01",
+        device_stamped_at: "2026-10-31T16:00:01+09:00",
+      }),
+    });
+    expect(response.status).toBe(404);
+  });
+
   it("rejects invalid token and invalid device credentials", async () => {
     const repository = new MemoryRepository();
     const app = createTestApp(repository);
@@ -355,14 +413,27 @@ describe("server API", () => {
       }),
     });
     expect(heartbeat.status).toBe(200);
-    current = new Date(current.getTime() + 91_000);
-    const devices = await app.request("/api/admin/devices", {
+    current = new Date(current.getTime() + 61_000);
+    const warningDevices = await app.request("/api/admin/devices", {
       headers: { "x-admin-password": "staff-password" },
     });
-    const payload = await devices.json() as { devices: Array<{ id: string; status: string; pending_queue_count: number }> };
+    const warningPayload = await warningDevices.json() as { devices: Array<{ id: string; status: string }> };
+    expect(warningPayload.devices.find((device) => device.id === "dev-01")?.status).toBe("警告");
+
+    current = new Date(current.getTime() + 30_000);
+    const disconnectedDevices = await app.request("/api/admin/devices", {
+      headers: { "x-admin-password": "staff-password" },
+    });
+    const payload = await disconnectedDevices.json() as { devices: Array<{ id: string; status: string; pending_queue_count: number }> };
     const item = payload.devices.find((device) => device.id === "dev-01");
     expect(item?.status).toBe("断");
     expect(item?.pending_queue_count).toBe(3);
+
+    const stats = await app.request("/api/admin/stats", {
+      headers: { "x-admin-password": "staff-password" },
+    });
+    expect(stats.status).toBe(200);
+    expect((await stats.json() as { sample_spots_active: boolean }).sample_spots_active).toBe(true);
   });
 
   it("checks the database in health and enables RLS without policies", async () => {

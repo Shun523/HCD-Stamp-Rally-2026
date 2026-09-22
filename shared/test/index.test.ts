@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { meResponseSchema, stampRequestSchema } from "../src/index.js";
+import { adminStatsResponseSchema, meResponseSchema, stampRequestSchema } from "../src/index.js";
 
 describe("shared API contracts", () => {
   it("accepts the server's participant response", () => {
@@ -14,5 +14,19 @@ describe("shared API contracts", () => {
 
   it("rejects a stamp request without a device id", () => {
     expect(stampRequestSchema.safeParse({ token: "token" }).success).toBe(false);
+  });
+
+  it("requires the admin stats sample-data signal", () => {
+    expect(adminStatsResponseSchema.safeParse({
+      participant_count: 1,
+      stamp_count_by_spot: [],
+      completed_count: 0,
+      sample_spots_active: true,
+    }).success).toBe(true);
+    expect(adminStatsResponseSchema.safeParse({
+      participant_count: 1,
+      stamp_count_by_spot: [],
+      completed_count: 0,
+    }).success).toBe(false);
   });
 });
