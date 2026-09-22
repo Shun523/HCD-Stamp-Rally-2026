@@ -336,9 +336,7 @@ export function createApp(dependencies: AppDependencies) {
     app.all("/api", (c) => c.json(jsonError("not_found"), 404));
     app.all("/api/*", (c) => c.json(jsonError("not_found"), 404));
     app.use("*", staticAssets);
-    app.get("*", async (c, next) => {
-      await staticIndex(c, next);
-    });
+    app.get("*", (c, next) => staticIndex(c, next));
   }
 
   return app;

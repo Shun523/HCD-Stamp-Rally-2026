@@ -1,4 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import type {
@@ -372,5 +374,24 @@ describe("server API", () => {
     const migration = await readFile(new URL("../drizzle/0000_jazzy_vision.sql", import.meta.url), "utf8");
     expect(migration).toContain("ALTER TABLE \"stamps\" ENABLE ROW LEVEL SECURITY");
     expect(migration).toContain("UNIQUE(\"session_id\",\"spot_id\")");
+  });
+  // 仕様7章: /admin はSPAの画面でファイルが無いため、index.htmlを返す必要がある。
+  it("serves the SPA index for paths without a built file", async () => {
+    const repository = new MemoryRepository();
+    const webRoot = await mkdtemp(join(tmpdir(), "hcd-web-root-"));
+    await writeFile(join(webRoot, "index.html"), "<!doctype html><title>stamp rally</title>");
+    try {
+      const app = createApp({
+        repository,
+        config: { adminPassword: "staff-password", ackTimeoutMs: 10 },
+        webRoot,
+      });
+      const response = await app.request("/admin");
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toContain("text/html");
+      expect(await response.text()).toContain("stamp rally");
+    } finally {
+      await rm(webRoot, { recursive: true, force: true });
+    }
   });
 });
