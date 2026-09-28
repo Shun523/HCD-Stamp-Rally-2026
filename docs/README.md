@@ -10,5 +10,6 @@
    - `03-device.md`
    - `04-integration.md`
 4. [`deploy.md`](deploy.md) — 結合完了後のデプロイ手順
+5. [`device-test.md`](device-test.md) — 実機（Pi・実スマホ）でのローカル試験と本番試験の手順
 
 旧版、修正案、差分ファイルは正本へ統合し、並行して参照しない。

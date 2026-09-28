@@ -10,8 +10,10 @@ COPY server ./server
 COPY web ./web
 
 RUN pnpm install --frozen-lockfile
+# 仕様4-1: Viteの公開環境変数はWebビルド時に静的埋め込みする。
+ARG GOOGLE_MAPS_BROWSER_VALUE
 RUN pnpm --filter @hcd-stamp-rally/shared build \
-  && pnpm --filter @hcd-stamp-rally/web build \
+  && VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_BROWSER_VALUE" pnpm --filter @hcd-stamp-rally/web build \
   && pnpm --filter @hcd-stamp-rally/server build
 
 # serverの本番依存と共有パッケージを自己完結した配置へ絞る。

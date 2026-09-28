@@ -2,7 +2,9 @@
 
 この手順は本番への実行手順です。実行前に `<...>` を実際の値へ置き換えます。
 仕様上、Cloud Run のリージョン、プロジェクトID、サービス名、リハーサル日は未確定のため、
-ここでは値を決めません。秘密情報をコマンド履歴・Git・Dockerイメージへ残さないでください。
+ここでは値を決めません。サーバーの秘密情報をコマンド履歴・Git・Dockerイメージへ残さないでください。
+`VITE_GOOGLE_MAPS_API_KEY` はブラウザへ配信される公開キーであり、Webビルド成果物とDockerイメージに
+静的に埋め込まれます。秘密として扱うのではなく、Google Cloud側で利用元と利用APIを制限します。
 
 ## 0. 事前に確定・用意する値
 
@@ -15,6 +17,7 @@
 | `SUPABASE_SESSION_URL` | Supabaseの**Session pooler**接続文字列 |
 | `DEVICE_KEYS_JSON` | 機体IDとAPIキーのJSON。例: `{"dev-01":"..."}` |
 | `ADMIN_PASSWORD` | スタッフ用ダッシュボードの共有パスワード |
+| `VITE_GOOGLE_MAPS_API_KEY` | HTTPリファラー制限を付けたMaps JavaScript API専用のブラウザキー |
 
 `SUPABASE_SESSION_URL` は Supabase Dashboard の **Connect → Session pooler** からコピーします。
 Shared pooler の Session mode はポート `5432`、ユーザー名は `postgres.<PROJECT-REF>` です。
@@ -54,20 +57,35 @@ Cloud RunからIPv4で接続するため、この文字列を使います。文�
 ## 2. イメージ作成と初回デプロイ
 
 リポジトリ直下の `Dockerfile` は `shared` と `web` をビルドし、`web/dist` を含む単一イメージを
-作ります。サーバーはこの成果物を同一オリジンで配信します。
+作ります。サーバーはこの成果物を同一オリジンで配信します。Viteの環境変数はビルド時に静的埋め込み
+されるため、`VITE_GOOGLE_MAPS_API_KEY` はCloud Runの実行時環境変数ではなく、Cloud Buildから
+Dockerのbuild argumentとして渡します。
+
+### 2-1. 初回用イメージを作る
+
+初回は本番URLが未確定なので、Mapsキーを渡さないイメージを作ります。このイメージでは地図の代わりに
+スポット一覧が表示されます。
 
 ```sh
 export PROJECT_ID='<Google CloudプロジェクトID>'
 export REGION='<Cloud Runリージョン>'
 export SERVICE='<サービス名>'
 export REPOSITORY='hcd-stamp-rally'
-export IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE:$(git rev-parse --short HEAD)"
+export IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE"
+export SOURCE_REVISION="$(git rev-parse --short HEAD)"
+export BOOTSTRAP_IMAGE="$IMAGE_BASE:$SOURCE_REVISION-bootstrap"
+export IMAGE="$IMAGE_BASE:$SOURCE_REVISION"
 
 gcloud config set project "$PROJECT_ID"
 gcloud artifacts repositories create "$REPOSITORY" \
   --repository-format=docker --location="$REGION"
-gcloud builds submit --tag "$IMAGE"
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --substitutions="_IMAGE=$BOOTSTRAP_IMAGE" \
+  .
 ```
+
+Artifact Registryのリポジトリを作成済みの場合、`gcloud artifacts repositories create` は再実行しません。
 
 接続文字列・機体キー・管理パスワードは Secret Manager に格納します。以下の標準入力は端末履歴を
 避けるためのもので、値を貼り付けたシェル履歴を共有しないでください。
@@ -87,7 +105,7 @@ Cloud Run実行サービスアカウントへ各Secretの `roles/secretmanager.s
 
 ```sh
 gcloud run deploy "$SERVICE" \
-  --image="$IMAGE" \
+  --image="$BOOTSTRAP_IMAGE" \
   --region="$REGION" \
   --allow-unauthenticated \
   --set-secrets=DATABASE_URL=hcd-database-url:latest,DEVICE_KEYS_JSON=hcd-device-keys:latest,ADMIN_PASSWORD=hcd-admin-password:latest \
@@ -98,14 +116,65 @@ gcloud run deploy "$SERVICE" \
   --cpu-throttling
 ```
 
-デプロイ後にサービスURLで次を確認します。
+デプロイ後にCloud Runが割り当てたURLを取得し、ヘルスチェックを確認します。
 
 ```sh
-curl --fail-with-body "https://<Cloud Run URL>/api/health"
+export SERVICE_URL="$(gcloud run services describe "$SERVICE" \
+  --region="$REGION" \
+  --format='value(status.url)')"
+curl --fail-with-body "$SERVICE_URL/api/health"
 ```
 
-`{"ok":true,"db":"ok"}` が返ること、`/` がWebアプリを返すこと、`/api/me` と `/api/events` が
-同一オリジンで通信することをブラウザで確認します。
+`{"ok":true,"db":"ok"}` が返ることを確認します。
+
+### 2-2. Maps APIキーへ本番URLを登録する
+
+Google Cloud Consoleの **Google Maps Platform → Keys & Credentials** で本番用キーを開き、
+Application restrictionsを **Websites**、API restrictionsを **Maps JavaScript APIのみ** にします。
+Websitesには、取得したURLが `https://example.run.app` なら次の2件を登録します。
+
+```text
+https://example.run.app
+https://example.run.app/*
+```
+
+独自ドメインからも配信する場合は、そのオリジンと `/*` 付きの値も登録します。保存後、制限が反映
+されるまで数分待ちます。Maps JavaScript APIではブラウザからキーを確認できるため、キーを隠すこと
+ではなく、このHTTPリファラー制限とAPI制限が必須です。
+
+### 2-3. Mapsキー入りの本番用イメージを作る
+
+次の入力操作はzsh用です。キーの入力内容は画面とシェル履歴に表示されません。Cloud Buildの
+ビルドメタデータ・ログとWebビルド成果物には値が残るため、制限済みのブラウザキーだけを使用します。
+
+```sh
+read -rs 'VITE_GOOGLE_MAPS_API_KEY?Google Maps API key: '
+echo
+export VITE_GOOGLE_MAPS_API_KEY
+
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --substitutions="_IMAGE=$IMAGE,_VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY" \
+  .
+
+unset VITE_GOOGLE_MAPS_API_KEY
+```
+
+キーを変更した場合も、同じ手順でWebを再ビルドする必要があります。Cloud Runへ実行時環境変数として
+設定するだけでは、ビルド済みのWebには反映されません。
+
+本番用イメージを同じサービスへデプロイします。サービスURLと既存のCloud Run設定は維持されます。
+
+```sh
+gcloud run deploy "$SERVICE" \
+  --image="$IMAGE" \
+  --region="$REGION"
+```
+
+デプロイ後、`/` がWebアプリを返すこと、`/api/me` と `/api/events` が同一オリジンで通信すること、
+マップ画面にGoogle Mapsと5スポットのマーカーが表示されることをブラウザで確認します。開発者ツールの
+コンソールに `RefererNotAllowedMapError`、`BillingNotEnabledMapError`、`ApiNotActivatedMapError`、
+`InvalidKeyMapError` が出ていないことも確認します。
 
 ## 3. リハーサル日・イベント前日〜当日のCloud Run設定
 
@@ -173,6 +242,8 @@ gcloud scheduler jobs describe hcd-supabase-health --location="$REGION"
   `concurrency=1000`、timeout 3600秒、CPU常時割り当てを確認する。
 - [ ] `/api/health` が200かつ `db: "ok"` を返すこと、Cloud Schedulerの直近実行が成功していることを確認する。
 - [ ] SupabaseでSession poolerの接続文字列を再確認し、RLS確認SQLを実行する。
+- [ ] Maps APIキーが本番URLからのMaps JavaScript APIだけに制限され、予算アラートが有効なことを確認する。
+- [ ] 実スマホのマップ画面でGoogle Mapsと5スポットが表示され、ブラウザコンソールにMaps APIエラーがないことを確認する。
 - [ ] 各Piを起動し、ダッシュボードで全機の30秒ハートビート、スポット割当、未送信キュー0件を確認する。
 - [ ] 予備機を含め、実スマホでQR表示→押印→SSE反映→ACKを1回通す。テスト用セッションを使い、
   本番参加者データを混ぜない。
@@ -182,6 +253,7 @@ gcloud scheduler jobs describe hcd-supabase-health --location="$REGION"
 
 - [ ] Cloud Runの本番設定（min 1、max 1、CPU常時、timeout 3600）を再確認し、以後はデプロイしない。
 - [ ] `/api/health`、Cloud Scheduler、Supabaseプロジェクトの稼働状態を確認する。
+- [ ] 実スマホでGoogle Mapsと5スポットが表示されること、Maps APIの利用量に異常がないことを確認する。
 - [ ] 全5機と予備機のハートビート、電源、ネットワーク、未送信キュー0件をダッシュボードで確認する。
 - [ ] 各スポットで1回ずつ試験押印し、機器のスタンプ画像とスマホのスタンプ帳へのSSE反映を確認する。
 - [ ] 5スポットを揃えたテストセッションでゴールページへ遷移することを確認し、景品交換所の案内文を目視する。

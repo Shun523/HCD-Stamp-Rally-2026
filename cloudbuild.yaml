@@ -1,0 +1,27 @@
+# 仕様2章・4-1: Webとサーバーを単一イメージにし、Mapsの公開キーをWebビルド時に埋め込む。
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    env:
+      - IMAGE=${_IMAGE}
+      - VITE_GOOGLE_MAPS_API_KEY=${_VITE_GOOGLE_MAPS_API_KEY}
+    args:
+      - -ceu
+      - |
+        if [ "$$IMAGE" = "REQUIRED" ]; then
+          echo '_IMAGE substitution is required' >&2
+          exit 1
+        fi
+        docker build \
+          --build-arg "GOOGLE_MAPS_BROWSER_VALUE=$$VITE_GOOGLE_MAPS_API_KEY" \
+          --tag "$$IMAGE" \
+          .
+
+images:
+  - ${_IMAGE}
+
+substitutions:
+  _IMAGE: REQUIRED
+  # 空なら地図を無効にした初回デプロイ用イメージを作る。
+  _VITE_GOOGLE_MAPS_API_KEY: ''
