@@ -62,4 +62,5 @@ def test_app_starts_and_stops_with_dummy_camera_and_display(tmp_path: Path) -> N
     assert not camera.started
     assert display.last_image is not None
     assert display.last_image.getpixel((120, 120)) == (0, 0, 0)
-    assert api.heartbeat_count >= 1
+    # 仕様5-6: 起動から30秒たつまでは初回ハートビートを送らない。
+    assert api.heartbeat_count == 0

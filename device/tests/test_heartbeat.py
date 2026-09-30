@@ -28,7 +28,7 @@ class HeartbeatTests(unittest.TestCase):
             last_stamp_count=lambda: 2,
             monotonic=lambda: 0,
         )
-        reporter.tick(now=0)
+        reporter.tick(now=30)
         reporter.shutdown()
 
         self.assertEqual(
@@ -36,9 +36,26 @@ class HeartbeatTests(unittest.TestCase):
             [
                 {
                     "device_id": "dev-01",
-                    "uptime_seconds": 0,
+                    "uptime_seconds": 30,
                     "last_stamp_count": 2,
                     "pending_queue_count": 4,
                 }
             ],
         )
+
+    def test_first_heartbeat_waits_30_seconds_after_start(self) -> None:
+        """仕様5-6: 30秒もたずに再起動を繰り返す機体はハートビートを送らず、断として検知される。"""
+
+        api = FakeApi()
+        reporter = HeartbeatReporter(
+            api,
+            "dev-01",
+            pending_queue_count=lambda: 0,
+            last_stamp_count=lambda: 0,
+            monotonic=lambda: 0,
+        )
+        reporter.tick(now=0)
+        reporter.tick(now=29.9)
+        reporter.shutdown()
+
+        self.assertEqual(api.heartbeats, [])

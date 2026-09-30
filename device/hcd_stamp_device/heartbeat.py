@@ -33,7 +33,9 @@ class HeartbeatReporter:
         self._monotonic = monotonic
         self._logger = logger or logging.getLogger(__name__)
         self._started_at = monotonic()
-        self._last_sent_at = float("-inf")
+        # 仕様5-6: 初回も起動から30秒後に送る。30秒もたずに再起動を繰り返す機体は
+        # ハートビートが届かず、ダッシュボードで断として検知される。
+        self._last_sent_at = self._started_at
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="heartbeat-sender")
         self._future: Future[Any] | None = None
 

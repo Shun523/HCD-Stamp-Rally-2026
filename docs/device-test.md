@@ -153,14 +153,15 @@ Windowsでサーバーを立て直す必要はなく、WSL2を `mirrored` モー
 リポジトリ直下で実行する。機体キーは試験用の値を使い、本番用キーとは分ける。
 
 ```sh
-supabase start
+npx supabase start
 pnpm --filter @hcd-stamp-rally/server db:migrate
-DEVICE_KEYS_JSON='{"dev-01":"<試験用キー>"}' pnpm --filter @hcd-stamp-rally/server db:seed
+DEVICE_KEYS_JSON='{"dev-01":"test"}' pnpm --filter @hcd-stamp-rally/server db:seed
 pnpm --filter @hcd-stamp-rally/shared build
 pnpm --filter @hcd-stamp-rally/web build
-PORT=8787 ADMIN_PASSWORD=<試験用パスワード> pnpm --filter @hcd-stamp-rally/server dev
+PORT=8787 ADMIN_PASSWORD=pass pnpm --filter @hcd-stamp-rally/server dev
 ```
-
+試験用キー：test
+試験用パスワード：pass
 Piの `config.toml` を次のように設定して、疎通を確認する。
 
 ```toml
@@ -180,7 +181,7 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
 
 | 操作 | 期待する結果 |
 | --- | --- |
-| Piを起動して30秒待つ | ダッシュボードで dev-01 が「正常」、未送信キュー0件 |
+| Piを起動して60秒待つ | ダッシュボードで dev-01 が「正常」、未送信キュー0件（初回ハートビートは起動30秒後、画面更新は30秒ごと） |
 | PC画面のQRをPiに読ませる | 液晶にスタンプ絵柄が2秒表示され、PCのスタンプ帳に即時反映される |
 | 同じQRをもう一度読ませる | 絵柄にチェックが重なって2秒表示される（`already`） |
 | 無関係なQRを読ませる | ×アイコンと「このQRは使えません」が2秒表示される |
@@ -202,6 +203,9 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
 
    - [ ] 電源投入からサービス開始まで60秒以内（6-8）
    - [ ] `sudo systemctl kill -s KILL hcd-stamp-device` の5秒後に自動で再起動する
+   - [ ] 電源投入を数回繰り返し、液晶のカメラ映像が止まったままにならない。起動直後にカメラが
+     止まった場合も、ログに「メインループが5秒止まりました」が出て、15秒ほどで映像が戻る
+   - [ ] 再起動を繰り返す機体がダッシュボードで「正常」に見えない。カメラのケーブルを外した状態で電源を入れる（通電中に抜き差ししない）と、90秒ほどで「断」になりアラートが出る
 
 2. 筐体に組み込み、**実スマホを通常の輝度のまま**押し当てて、75×75 CSSピクセルのQRが
    安定して読めることを確認する（6-2）。ここでは読み取りの安定性だけを見る。

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -19,6 +20,7 @@ from .models import SendOutcome, SendResult
 from .queue import PersistentStampQueue
 from .sender import SenderWorker
 from .vision import QR_SCAN_INTERVAL, OpenCvQrDecoder, center_square, frame_to_lcd_image
+from .watchdog import STALL_TIMEOUT_SECONDS, LoopWatchdog
 
 QR_RESCAN_SECONDS = 3.0
 
@@ -41,6 +43,8 @@ class StampDeviceApp:
         wall_clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         sleeper: Callable[[float], None] = time.sleep,
         logger: logging.Logger | None = None,
+        stall_timeout: float = STALL_TIMEOUT_SECONDS,
+        on_stall: Callable[[], None] | None = None,
     ) -> None:
         self._camera = camera
         self._display = display
@@ -76,6 +80,22 @@ class StampDeviceApp:
         self._overlay: Image.Image | None = None
         self._overlay_until = float("-inf")
         self._running = True
+        self._stall_timeout = stall_timeout
+        self._watchdog = LoopWatchdog(
+            on_stall or self._exit_after_stall, timeout=stall_timeout, monotonic=monotonic
+        )
+
+    def _exit_after_stall(self) -> None:
+        """固まったメインループは戻らないため、送信中の一件だけ待って異常終了する（仕様6-8）。"""
+
+        self._logger.error(
+            "メインループが%.0f秒止まりました（カメラのフレーム途絶など）。再起動のため終了します",
+            self._stall_timeout,
+        )
+        # 送信中の一件は完了させ、失敗なら永続キューへ積ませる（仕様6-7）。
+        self._sender.shutdown()
+        # systemdのRestart=on-failureで再起動させる。
+        os._exit(1)
 
     def _set_result_overlay(self, result: SendResult) -> None:
         if result.stamp_count is not None:
@@ -121,9 +141,11 @@ class StampDeviceApp:
     def run(self) -> None:
         """Ctrl+Cまで実行し、安全な終了順を必ず守る（仕様6-8）。"""
 
+        self._watchdog.start()
         self._camera.start()
         try:
             while self._running:
+                self._watchdog.feed()
                 self._process_completed_sends()
                 self._heartbeat.tick()
                 frame = self._camera.capture_frame()
@@ -134,6 +156,7 @@ class StampDeviceApp:
         except KeyboardInterrupt:
             self._logger.info("Ctrl+Cを受け取りました。送信完了を待機します。")
         finally:
+            self._watchdog.stop()
             # 送信中の処理を終えてから、カメラ停止・液晶消灯の順で終了する。
             for result in self._sender.shutdown():
                 self._set_result_overlay(result)

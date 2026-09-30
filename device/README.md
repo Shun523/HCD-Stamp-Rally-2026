@@ -81,3 +81,5 @@ sudo systemctl enable --now hcd-stamp-device.service
 unitはネットワーク時刻同期後に開始し、異常終了時は5秒後に自動再起動します。
 `StateDirectory` により再送キュー用の `/var/lib/hcd-stamp-device` はsystemdが作成します。
 Ctrl+Cまたはsystemd停止時には送信中の1件を終え、カメラを解放して液晶を黒へ戻します。
+メインループが5秒止まった場合（libcameraの `Camera frontend has timed out!` でフレームが
+届かなくなった場合など）は、送信中の1件を終えてから終了コード1で終了し、systemdに再起動させます。
