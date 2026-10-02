@@ -22,6 +22,7 @@ import {
 import type { Repository } from "./db/repository.js";
 import { AckTracker, SseHub } from "./sse.js";
 import { HeartbeatMonitor } from "./heartbeat.js";
+import { createStructuredLogger, type Logger } from "./logger.js";
 
 export type AppDependencies = {
   repository: Repository;
@@ -31,7 +32,7 @@ export type AppDependencies = {
   heartbeatMonitor?: HeartbeatMonitor;
   now?: () => Date;
   monotonicNow?: () => number;
-  logger?: Pick<Console, "info" | "warn">;
+  logger?: Logger;
   webRoot?: string;
   /** HTTPのローカルE2Eに限りfalseを渡す。本番は常にSecure Cookie。 */
   secureCookies?: boolean;
@@ -53,7 +54,7 @@ const parseJson = async <Schema extends z.ZodTypeAny>(request: Request, schema: 
 export function createApp(dependencies: AppDependencies) {
   const now = dependencies.now ?? (() => new Date());
   const monotonicNow = dependencies.monotonicNow ?? (() => performance.now());
-  const logger = dependencies.logger ?? console;
+  const logger = dependencies.logger ?? createStructuredLogger();
   const config = {
     ackTimeoutMs: dependencies.config?.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS,
     adminPassword: dependencies.config?.adminPassword ?? "",
