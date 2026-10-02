@@ -2,7 +2,7 @@
 
 実装時は次の順に参照する。
 
-1. [`spec.md`](spec.md) — 仕様の正本（v1.8正式版）
+1. [`spec.md`](spec.md) — 仕様の正本（v1.9正式版）
 2. [`design.md`](design.md) — 画面設計の正本。確定済みの設計差分を統合済み
 3. [`goals/`](goals/) — 工程別の完了条件
    - `01-server.md`
