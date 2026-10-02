@@ -161,7 +161,7 @@ export function QrDialog({ copy, headerHeight, isClosing, onCloseRequest, onClos
       <div aria-hidden="true" className={styles.paper} data-qr-paper="true" />
       <div className={styles.stampCircle} data-qr-stamp-circle="true">
         <StampSlotDottedCircle />
-        <div className={styles.qrCode} data-qr-code-container="true"><QRCodeSVG aria-label="Stamp QR code" includeMargin={false} level="M" size={64} value={token} /></div>
+        <div className={styles.qrCode} data-qr-code-container="true"><QRCodeSVG aria-label="Stamp QR code" includeMargin={false} level="M" size={50} value={token} /></div>
       </div>
       <IconButton className={styles.back} disabled={isClosing} label={copy.backToBook} ref={backRef} type="button" onClick={onCloseRequest}><ArrowLeft aria-hidden="true" size={26} strokeWidth={2.25} /></IconButton>
     </main>

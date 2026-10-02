@@ -183,9 +183,9 @@ test("uses one QR from every empty slot and restores focus after closing", async
       return { back, circle, qr, qrCode, ring: ring ? { dash: ring.getAttribute("stroke-dasharray"), stroke: ring.getAttribute("stroke-width") } : undefined };
     });
     const path = await qr.locator("path").first().getAttribute("d");
-    expect(dimensions).toEqual({ height: 64, width: 64 });
-    expect(geometry.qrCode?.width).toBe(88);
-    expect(geometry.qrCode?.height).toBe(88);
+    expect(dimensions).toEqual({ height: 50, width: 50 });
+    expect(geometry.qrCode?.width).toBe(74);
+    expect(geometry.qrCode?.height).toBe(74);
     expect(Math.abs(((geometry.qr?.left ?? 0) + (geometry.qr?.width ?? 0) / 2) - ((geometry.circle?.left ?? 0) + (geometry.circle?.width ?? 0) / 2))).toBeLessThanOrEqual(0.5);
     expect(Math.abs(((geometry.qr?.top ?? 0) + (geometry.qr?.height ?? 0) / 2) - ((geometry.circle?.top ?? 0) + (geometry.circle?.height ?? 0) / 2))).toBeLessThanOrEqual(0.5);
     expect(geometry.ring).toEqual({ dash: "3 5", stroke: "2.5" });
@@ -300,8 +300,8 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     expect(metrics.circle?.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
     expect(metrics.circle?.top).toBeGreaterThanOrEqual(metrics.header?.bottom ?? 0);
     expect(metrics.back?.top).toBeGreaterThanOrEqual((metrics.header?.bottom ?? 0) + 8);
-    expect(metrics.qr?.width).toBe(64);
-    expect(metrics.qr?.height).toBe(64);
+    expect(metrics.qr?.width).toBe(50);
+    expect(metrics.qr?.height).toBe(50);
     expect(metrics.back?.width).toBeGreaterThanOrEqual(48);
     expect(metrics.back?.height).toBeGreaterThanOrEqual(48);
     await page.keyboard.press("Escape");
