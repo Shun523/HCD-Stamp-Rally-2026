@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 const isoTimestamp = z.string().datetime({ offset: true });
+// 仕様8章・9章: 受け取る識別子はDBカラムの上限64文字に収める。
+const requestIdentifier = z.string().min(1).max(64);
+
+export const apiErrorResponseSchema = z.object({ error: z.string() });
 
 export const spotSchema = z.object({
   id: z.string(),
@@ -31,9 +35,9 @@ export const spotsResponseSchema = z.object({
 });
 
 export const stampRequestSchema = z.object({
-  token: z.string().min(1),
-  device_id: z.string().min(1),
-  device_stamped_at: isoTimestamp.optional(),
+  token: requestIdentifier,
+  device_id: requestIdentifier,
+  device_stamped_at: isoTimestamp.max(64).optional(),
 });
 
 export const stampResponseSchema = z.object({
@@ -53,11 +57,11 @@ export const stampResponseSchema = z.object({
 });
 
 export const ackRequestSchema = z.object({
-  event_id: z.string().min(1),
+  event_id: requestIdentifier,
 });
 
 export const heartbeatRequestSchema = z.object({
-  device_id: z.string().min(1),
+  device_id: requestIdentifier,
   uptime_seconds: z.number().nonnegative(),
   last_stamp_count: z.number().int().nonnegative(),
   pending_queue_count: z.number().int().nonnegative(),

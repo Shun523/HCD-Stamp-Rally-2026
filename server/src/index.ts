@@ -5,7 +5,7 @@ import { createDb } from "./db/client.js";
 import { PostgresRepository } from "./db/repository.js";
 
 const config = loadConfig();
-const database = createDb(config.databaseUrl);
+const database = createDb(config.databaseUrl, { ca: config.databaseSslCa });
 const repository = new PostgresRepository(database.db);
 const app = createApp({ repository, config, webRoot: config.webDistDir });
 

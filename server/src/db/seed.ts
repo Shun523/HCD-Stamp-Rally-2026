@@ -22,7 +22,8 @@ export const sampleSpots = [1, 2, 3, 4, 5].map((number) => ({
 const keyHash = (key: string) => createHash("sha256").update(key).digest("hex");
 
 const main = async () => {
-  const { db, client } = createDb(loadConfig().databaseUrl);
+  const config = loadConfig();
+  const { db, client } = createDb(config.databaseUrl, { ca: config.databaseSslCa });
   try {
     await db.insert(spots).values(sampleSpots).onConflictDoUpdate({
       target: spots.id,

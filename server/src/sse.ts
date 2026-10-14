@@ -8,6 +8,34 @@ export type ServerEvent = {
 
 type Subscriber = (event: ServerEvent) => void;
 
+/** 仕様5-4/11章: 通知接続を原子的に確保し、切断時は枠を一度だけ解放する。 */
+export class SseConnectionBudget {
+  private readonly sessions = new Map<string, number>();
+  private total = 0;
+
+  public constructor(private readonly perSession: number, private readonly maximum: number) {
+    if (![perSession, maximum].every((value) => Number.isSafeInteger(value) && value > 0)) {
+      throw new Error("SSE connection limits must be positive safe integers");
+    }
+  }
+
+  public reserve(sessionId: string): (() => void) | undefined {
+    const count = this.sessions.get(sessionId) ?? 0;
+    if (count >= this.perSession || this.total >= this.maximum) return undefined;
+    this.total += 1;
+    this.sessions.set(sessionId, count + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.total -= 1;
+      const remaining = this.sessions.get(sessionId)! - 1;
+      if (remaining === 0) this.sessions.delete(sessionId);
+      else this.sessions.set(sessionId, remaining);
+    };
+  }
+}
+
 export class SseHub {
   private readonly channels = new Map<string, Set<Subscriber>>();
 

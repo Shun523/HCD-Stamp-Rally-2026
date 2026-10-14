@@ -105,4 +105,19 @@ describe("AdminDashboard", () => {
     expect(container.textContent).toContain("パスワードが正しくありません。");
     expect(container.querySelector("#admin-password")).not.toBeNull();
   });
+
+  it("explains that staff should wait when authentication attempts are limited", async () => {
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async () => new Response(
+      JSON.stringify({ error: "rate_limited" }),
+      { status: 429, headers: { "Retry-After": "600" } },
+    )));
+    await act(async () => root.render(<AdminDashboard />));
+    await act(async () => enterPassword(container.querySelector<HTMLInputElement>("#admin-password")!, "staff-password"));
+    await act(async () => {
+      container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+    expect(container.textContent).toContain("時間をおいて再度お試しください。");
+    expect(container.querySelector("#admin-password")).not.toBeNull();
+    expect(container.textContent).not.toContain("通信を確認");
+  });
 });

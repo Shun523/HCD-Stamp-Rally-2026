@@ -194,7 +194,9 @@ export function AdminDashboard() {
     } catch (caught) {
       setError(caught instanceof ApiError && caught.status === 401
         ? "パスワードが正しくありません。"
-        : "管理情報を取得できませんでした。通信を確認して再試行してください。");
+        : caught instanceof ApiError && caught.status === 429
+          ? "認証の試行回数が多いため、時間をおいて再度お試しください。"
+          : "管理情報を取得できませんでした。通信を確認して再試行してください。");
     } finally {
       setSubmitting(false);
     }

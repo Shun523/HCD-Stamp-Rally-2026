@@ -1,6 +1,7 @@
 import { randomUrlSafe, hashSecret, readAdminPassword, readDeviceApiKey, secretsEqual, SESSION_COOKIE } from "./security.js";
 import { performance } from "node:perf_hooks";
 import { getCookie, setCookie } from "hono/cookie";
+import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -8,11 +9,13 @@ import type { Context } from "hono";
 import { z } from "zod";
 import {
   ackRequestSchema,
+  apiErrorResponseSchema,
   heartbeatRequestSchema,
   stampRequestSchema,
 } from "@hcd-stamp-rally/shared";
 import {
   DEFAULT_ACK_TIMEOUT_MS,
+  DEFAULT_SECURITY_LIMITS,
   EVENT_END_AT,
   OFFLINE_RESEND_END_AT,
   SESSION_COOKIE_EXPIRES_AT,
@@ -20,7 +23,9 @@ import {
   type ServerConfig,
 } from "./config.js";
 import type { Repository } from "./db/repository.js";
-import { AckTracker, SseHub } from "./sse.js";
+import { AckTracker, SseConnectionBudget, SseHub } from "./sse.js";
+import { clientAddress } from "./client-address.js";
+import { FixedWindowLimiter } from "./rate-limit.js";
 import { HeartbeatMonitor } from "./heartbeat.js";
 import { createStructuredLogger, type Logger } from "./logger.js";
 
@@ -38,7 +43,7 @@ export type AppDependencies = {
   secureCookies?: boolean;
 };
 
-const jsonError = (message: string) => ({
+const jsonError = (message: string) => apiErrorResponseSchema.parse({
   error: message,
 });
 
@@ -71,6 +76,29 @@ export function createApp(dependencies: AppDependencies) {
     ? serveStatic({ root: dependencies.webRoot, path: "index.html" })
     : undefined;
   const secureCookies = dependencies.secureCookies ?? true;
+  const limits = dependencies.config?.securityLimits ?? DEFAULT_SECURITY_LIMITS;
+  const trustedProxyHops = dependencies.config?.trustedProxyHops ?? 0;
+  // 接続元を無制限に保存しない。IPは一時メモリのみで、DBやログへ書かない。
+  const maxLimiterKeys = 10_000;
+  const adminFailures = new FixedWindowLimiter(limits.adminMaxFailures, limits.adminFailureWindowMs, maxLimiterKeys, monotonicNow);
+  const sessionsBySource = new FixedWindowLimiter(limits.sessionMaxNewPerSource, limits.sessionCreationWindowMs, maxLimiterKeys, monotonicNow);
+  const sessionsGlobally = new FixedWindowLimiter(limits.sessionMaxNewTotal, limits.sessionCreationWindowMs, 1, monotonicNow);
+  const sseConnections = new SseConnectionBudget(limits.sseMaxPerSession, limits.sseMaxTotal);
+  const rateLimited = (c: Context, retryAfter: number, error = "rate_limited") => {
+    c.header("Retry-After", String(retryAfter));
+    c.header("Cache-Control", "no-store");
+    // 仕様4-1: 初回アクセスはAPIの内部コードを見せず、日英で再アクセスを案内する。
+    if (c.req.path === "/") {
+      return c.text(`アクセスが集中しています。${retryAfter}秒ほど待って、もう一度QRコードを読み込んでください。\nPlease wait about ${retryAfter} seconds and scan the QR code again.`, 429);
+    }
+    return c.json(jsonError(error), 429);
+  };
+
+  // 仕様9章・11章: JSON解析より先に送信サイズを制限し、認証前の大きな入力も拒否する。
+  app.use("*", bodyLimit({
+    maxSize: limits.maxRequestBodyBytes,
+    onError: (c) => c.json(jsonError("payload_too_large"), 413),
+  }));
 
   const issueSession = async (c: Context) => {
     const sessionId = randomUrlSafe();
@@ -96,7 +124,10 @@ export function createApp(dependencies: AppDependencies) {
     return sessionId;
   };
 
-  const getSessionId = (c: Context) => getCookie(c, SESSION_COOKIE);
+  const getSessionId = (c: Context) => {
+    const value = getCookie(c, SESSION_COOKIE);
+    return value && value.length <= 64 ? value : undefined;
+  };
 
   const requireSession = async (c: Context): Promise<string | Response> => {
     const sessionId = getSessionId(c);
@@ -113,15 +144,30 @@ export function createApp(dependencies: AppDependencies) {
     return Boolean(device && secretsEqual(device.apiKeyHash, hashSecret(key)));
   };
 
-  const requireAdmin = (c: Context): boolean => {
+  const requireAdmin = (c: Context): Response | undefined => {
+    const address = clientAddress(c, trustedProxyHops);
+    const retryAfter = adminFailures.retryAfter(address);
+    if (retryAfter > 0) return rateLimited(c, retryAfter);
     const provided = readAdminPassword(c.req.raw);
-    return Boolean(config.adminPassword && provided && secretsEqual(provided, config.adminPassword));
+    if (config.adminPassword && provided && secretsEqual(provided, config.adminPassword)) {
+      adminFailures.reset(address);
+      return undefined;
+    }
+    adminFailures.take(address);
+    logger.warn("admin authentication failed", { path: c.req.path });
+    return c.json(jsonError("unauthorized"), 401);
   };
 
   // 仕様5-1: 初回アクセスでセッションを発行し、HttpOnly・Secure・SameSite=Lax Cookieを設定する。
   app.get("/", async (c, next) => {
     const existing = getSessionId(c);
     if (!existing || !(await dependencies.repository.getSession(existing))) {
+      const address = clientAddress(c, trustedProxyHops);
+      const retryAfter = Math.max(sessionsBySource.retryAfter(address), sessionsGlobally.retryAfter("global"));
+      if (retryAfter > 0) return rateLimited(c, retryAfter);
+      // 同期的に両方の枠を確保してからDBへ書くため、同時アクセスでも上限を超えない。
+      sessionsBySource.take(address);
+      sessionsGlobally.take("global");
       await issueSession(c);
       return c.redirect("/", 302);
     }
@@ -171,26 +217,38 @@ export function createApp(dependencies: AppDependencies) {
   app.get("/api/events", async (c) => {
     const sessionId = await requireSession(c);
     if (typeof sessionId !== "string") return sessionId;
+    const release = sseConnections.reserve(sessionId);
+    if (!release) return rateLimited(c, Math.ceil(SSE_PING_INTERVAL_MS / 1_000), "too_many_connections");
     return streamSSE(c, async (stream) => {
-      const unsubscribe = hub.subscribe(sessionId, (event) => {
-        void stream.writeSSE({
-          id: event.id,
-          event: event.event,
-          data: event.data,
-        });
-      });
-      const pingTimer = setInterval(() => {
-        void stream.writeSSE({ event: "ping", data: "{}" });
-      }, SSE_PING_INTERVAL_MS);
+      let unsubscribe = () => {};
+      let pingTimer: ReturnType<typeof setInterval> | undefined;
+      let resolveClosed = () => {};
+      let closed = false;
+      const closedPromise = new Promise<void>((resolve) => { resolveClosed = resolve; });
       const close = () => {
+        if (closed) return;
+        closed = true;
         clearInterval(pingTimer);
         unsubscribe();
+        release();
+        resolveClosed();
       };
+      const abort = () => { stream.abort(); close(); };
       stream.onAbort(close);
-      await new Promise<void>((resolve) => {
-        stream.onAbort(resolve);
-      });
-      close();
+      c.req.raw.signal.addEventListener("abort", abort, { once: true });
+      try {
+        if (c.req.raw.signal.aborted || stream.aborted) return;
+        unsubscribe = hub.subscribe(sessionId, (event) => {
+          void stream.writeSSE({ id: event.id, event: event.event, data: event.data }).catch(abort);
+        });
+        pingTimer = setInterval(() => {
+          void stream.writeSSE({ event: "ping", data: "{}" }).catch(abort);
+        }, SSE_PING_INTERVAL_MS);
+        await closedPromise;
+      } finally {
+        c.req.raw.signal.removeEventListener("abort", abort);
+        close();
+      }
     });
   });
 
@@ -317,7 +375,8 @@ export function createApp(dependencies: AppDependencies) {
 
   // 仕様7章: 管理APIは共有パスワードで保護する。
   app.get("/api/admin/devices", async (c) => {
-    if (!requireAdmin(c)) return c.json(jsonError("unauthorized"), 401);
+    const rejection = requireAdmin(c);
+    if (rejection) return rejection;
     const devices = await heartbeat.list();
     return c.json({ devices: devices.map((device) => ({
       id: device.id,
@@ -333,7 +392,8 @@ export function createApp(dependencies: AppDependencies) {
   });
 
   app.get("/api/admin/stats", async (c) => {
-    if (!requireAdmin(c)) return c.json(jsonError("unauthorized"), 401);
+    const rejection = requireAdmin(c);
+    if (rejection) return rejection;
     const [stats, spots] = await Promise.all([
       dependencies.repository.getStats(),
       dependencies.repository.getSpots(),
