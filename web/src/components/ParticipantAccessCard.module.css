@@ -1,0 +1,7 @@
+.facts { display: grid; margin: var(--space-4) 0; }
+.facts div { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: var(--border-thin); }
+.facts dt { color: var(--color-muted); }
+.facts dd { margin: 0; font-weight: 900; }
+.unlocked { margin: 0; }
+.unlocked a { display: inline-flex; align-items: center; min-height: 48px; color: var(--color-purple); font-weight: 900; }
+.message { margin: var(--space-3) 0 0; padding: var(--space-3); background: var(--color-yellow); border: var(--border-thin); border-radius: var(--radius-button); }

@@ -58,6 +58,9 @@ describe("AdminDashboard", () => {
   it("authenticates before showing operational status and ACK timeouts", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       const path = String(input);
+      if (path.endsWith("/api/status")) {
+        return new Response(JSON.stringify({ open: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" }), { status: 200 });
+      }
       if (path.endsWith("/api/admin/devices")) {
         return new Response(JSON.stringify({ devices: [normalDevice, warningDevice] }), { status: 200 });
       }
@@ -80,12 +83,14 @@ describe("AdminDashboard", () => {
       container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // 仕様7章: 機器・参加状況に加え、参加者画面の公開状態を取得する。
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(container.textContent).toContain("要対応のスタンプ機");
     expect(container.textContent).toContain("未送信キュー 2件");
     expect(container.textContent).toContain("本日のACK未到達1件");
     expect(container.textContent).toContain("完走率 60%（現在 60%）");
     expect(container.textContent).toContain("サンプルデータで稼働中");
+    expect(container.textContent).toContain("参加者画面の公開");
   });
 
   it("keeps the login form visible when the shared password is rejected", async () => {

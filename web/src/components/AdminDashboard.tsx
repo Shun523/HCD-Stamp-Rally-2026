@@ -4,6 +4,7 @@ import { ApiError, createAdminApi } from "../api.js";
 import { content } from "../data/content.js";
 import { Button } from "./ui/Button.js";
 import { Band, Card } from "./ui/Card.js";
+import { ParticipantAccessCard } from "./ParticipantAccessCard.js";
 import styles from "./AdminDashboard.module.css";
 
 type DashboardData = {
@@ -17,6 +18,8 @@ type DashboardData = {
 const formatTime = (value: string | null) => value
   ? new Intl.DateTimeFormat("ja-JP", { dateStyle: "short", timeStyle: "medium" }).format(new Date(value))
   : "未受信";
+
+const reauthenticateMessage = "認証の有効性を確認できませんでした。共有パスワードを再入力してください。";
 
 const needsAttention = (device: DeviceStatus) => device.status !== "正常" || device.pending_queue_count > 0;
 
@@ -80,7 +83,7 @@ function Dashboard({ initialData, onSignOut, password }: {
       setError(undefined);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
-        onSignOut("認証の有効性を確認できませんでした。共有パスワードを再入力してください。");
+        onSignOut(reauthenticateMessage);
         return;
       }
       setError("情報を更新できませんでした。30秒後に再試行します。");
@@ -149,6 +152,7 @@ function Dashboard({ initialData, onSignOut, password }: {
         <h3>スポット別押印数</h3>
         <ul className={styles.statsList}>{data.stampCountBySpot.map((stat) => <li key={stat.spot_id}><span>{stat.spot_id}</span><strong>{stat.count} 回</strong></li>)}</ul>
       </Card>
+      <ParticipantAccessCard className={styles.section} password={password} onUnauthorized={() => onSignOut(reauthenticateMessage)} />
     </main>
   );
 }
