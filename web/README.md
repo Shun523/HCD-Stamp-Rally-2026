@@ -15,7 +15,7 @@ pnpm --filter @hcd-stamp-rally/web build
 pnpm --filter @hcd-stamp-rally/web test:screenshots
 ```
 
-`/dev/gallery` は開発時だけ使える UI 部品一覧です。通常・押下・フォーカス・無効、未押印・押印済み、未完走・完走、協賛リンクあり・なしを確認できます。`test:screenshots` はモック API を使い、日英各12画面を 390×844 で `docs/screenshots/` に更新します。初回だけ Chromium が無ければ、リポジトリルートで次を実行してください。
+`/dev/gallery` は開発時だけ使える UI 部品一覧です。通常・押下・フォーカス・無効、未押印・押印済み、未完走・完走、協賛リンクあり・なしを確認できます。`test:screenshots` はモック API を使い、日英各13画面（待機画面を含む）を 390×844 で `docs/screenshots/` に更新します。初回だけ Chromium が無ければ、リポジトリルートで次を実行してください。
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH=0 pnpm --filter @hcd-stamp-rally/web exec playwright install chromium
