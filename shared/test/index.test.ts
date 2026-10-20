@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adminStatsResponseSchema, meResponseSchema, stampRequestSchema } from "../src/index.js";
+import { adminStatsResponseSchema, meResponseSchema, stampRequestSchema, statusResponseSchema } from "../src/index.js";
 
 describe("shared API contracts", () => {
   it("accepts the server's participant response", () => {
@@ -28,5 +28,14 @@ describe("shared API contracts", () => {
       stamp_count_by_spot: [],
       completed_count: 0,
     }).success).toBe(false);
+  });
+
+  it("accepts the participant opening status with the server time", () => {
+    expect(statusResponseSchema.safeParse({
+      open: false,
+      opens_at: "2026-10-31T01:00:00.000Z",
+      server_time: "2026-10-30T09:00:00.000Z",
+    }).success).toBe(true);
+    expect(statusResponseSchema.safeParse({ open: false, opens_at: "2026-10-31T01:00:00.000Z" }).success).toBe(false);
   });
 });

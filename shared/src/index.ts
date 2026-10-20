@@ -99,6 +99,16 @@ export const adminStatsResponseSchema = z.object({
   sample_spots_active: z.boolean(),
 });
 
+// 仕様4-8・9章: 一般開放の状態。判定はサーバー時刻で行い、待機画面の待ち時間にも使う。
+export const statusResponseSchema = z.object({
+  open: z.boolean(),
+  opens_at: isoTimestamp,
+  server_time: isoTimestamp,
+});
+
+// 仕様7章・9章: 開始前の解除Cookieを渡したことだけを返す。
+export const adminPreviewResponseSchema = z.object({ ok: z.literal(true) });
+
 export const stampedEventSchema = z.object({
   event_id: z.string(),
   spot_id: z.string(),
@@ -116,4 +126,6 @@ export type HeartbeatRequest = z.infer<typeof heartbeatRequestSchema>;
 export type DeviceStatus = z.infer<typeof deviceStatusSchema>;
 export type AdminDevicesResponse = z.infer<typeof adminDevicesResponseSchema>;
 export type AdminStatsResponse = z.infer<typeof adminStatsResponseSchema>;
+export type StatusResponse = z.infer<typeof statusResponseSchema>;
+export type AdminPreviewResponse = z.infer<typeof adminPreviewResponseSchema>;
 export type StampedEvent = z.infer<typeof stampedEventSchema>;
