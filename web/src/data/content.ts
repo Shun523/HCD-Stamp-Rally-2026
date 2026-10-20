@@ -66,6 +66,10 @@ export const content = {
       loading: "読み込み中…",
       sessionError: "スタンプ帳を更新できませんでした。通信を確認してください。",
       spotsError: "スポット情報を取得できませんでした。",
+      waitingTitle: "スタンプラリー",
+      waitingTag: "スタート",
+      waitingMessage: "スタンプラリーは当日から参加できます。当日にもう一度このページを開いてください。開いたままにしておくと、時間になると自動で始まります。",
+      statusError: "スタンプラリーの開始状況を確認できませんでした。通信を確認して、ページを開き直してください。",
     },
     en: {
       eventChip: "HOMECOMING DAY 2026",
@@ -126,6 +130,10 @@ export const content = {
       loading: "Loading…",
       sessionError: "We could not update your stamp book. Please check your connection.",
       spotsError: "We could not load spot information.",
+      waitingTitle: "Stamp Rally",
+      waitingTag: "OPENS",
+      waitingMessage: "The stamp rally opens on the event day. Please open this page again then. If you leave it open, it will start automatically.",
+      statusError: "We could not check whether the stamp rally has started. Please check your connection and reopen this page.",
     },
   },
 } as const;

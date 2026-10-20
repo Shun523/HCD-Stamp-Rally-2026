@@ -7,6 +7,7 @@ import { DevGallery } from "./components/DevGallery.js";
 import { GoalPage } from "./components/GoalPage.js";
 import { InfoPopup } from "./components/InfoPopup.js";
 import { IntroScreen } from "./components/IntroScreen.js";
+import { ParticipantGate } from "./components/ParticipantGate.js";
 import { ParticipantHeader } from "./components/ParticipantHeader.js";
 import { QrDialog } from "./components/QrDialog.js";
 import { SponsorsPage } from "./components/SponsorsPage.js";
@@ -251,5 +252,6 @@ export function ParticipantApp() {
 export function App() {
   if (window.location.pathname.startsWith("/admin")) return <AdminDashboard />;
   if (import.meta.env.DEV && window.location.pathname.startsWith("/dev/gallery")) return <DevGallery />;
-  return <ParticipantApp />;
+  // 仕様4-8: 参加者画面は一般開放の判定を通してから表示する。
+  return <ParticipantGate><ParticipantApp /></ParticipantGate>;
 }
