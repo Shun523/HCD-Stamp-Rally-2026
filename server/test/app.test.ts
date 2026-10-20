@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
+import { DEFAULT_SECURITY_LIMITS } from "../src/config.js";
 import type {
   HeartbeatState,
   NewSession,
@@ -205,6 +206,13 @@ const createTestApp = (repository: MemoryRepository, now = () => new Date("2026-
   now,
   config: { adminPassword: "staff-password", ackTimeoutMs: 10 },
 });
+
+const beforeOpening = () => new Date("2026-10-31T09:59:59+09:00");
+const unlockHeaders = { "x-admin-password": "staff-password" };
+const statusOpen = async (app: ReturnType<typeof createApp>, cookie?: string) => {
+  const response = await app.request("/api/status", cookie ? { headers: { cookie } } : undefined);
+  return (await response.json() as { open: boolean }).open;
+};
 
 describe("server API", () => {
   it("issues a secure session cookie with the fixed expiry", async () => {
@@ -464,5 +472,105 @@ describe("server API", () => {
     } finally {
       await rm(webRoot, { recursive: true, force: true });
     }
+  });
+});
+
+describe("participant opening (仕様4-8・7章)", () => {
+  it("serves the app without issuing a session before 10:00 on October 31", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, beforeOpening);
+    const response = await app.request("/", { redirect: "manual" });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(repository.sessions.size).toBe(0);
+  });
+
+  it("issues sessions from 10:00 on October 31", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, () => new Date("2026-10-31T10:00:00+09:00"));
+    expect((await app.request("/", { redirect: "manual" })).status).toBe(302);
+    expect(repository.sessions.size).toBe(1);
+  });
+
+  it("does not use up the session creation limit before opening", async () => {
+    const repository = new MemoryRepository();
+    let current = beforeOpening();
+    const app = createApp({
+      repository,
+      now: () => current,
+      config: { adminPassword: "staff-password", ackTimeoutMs: 10, securityLimits: { ...DEFAULT_SECURITY_LIMITS, sessionMaxNewTotal: 1 } },
+    });
+    for (let index = 0; index < 3; index++) expect((await app.request("/", { redirect: "manual" })).status).toBe(200);
+    current = new Date("2026-10-31T10:00:00+09:00");
+    expect((await app.request("/", { redirect: "manual" })).status).toBe(302);
+  });
+
+  it("reports the opening state with the server time and forbids caching", async () => {
+    const app = createTestApp(new MemoryRepository(), beforeOpening);
+    const response = await app.request("/api/status");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toEqual({
+      open: false,
+      opens_at: "2026-10-31T01:00:00.000Z",
+      server_time: "2026-10-31T00:59:59.000Z",
+    });
+    expect(await statusOpen(createTestApp(new MemoryRepository()))).toBe(true);
+  });
+
+  it("lets only devices unlocked from the dashboard use the app before opening", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, beforeOpening);
+    const unlock = await app.request("/api/admin/preview", { method: "POST", headers: unlockHeaders });
+    expect(unlock.status).toBe(200);
+    expect(await unlock.json()).toEqual({ ok: true });
+    const setCookie = unlock.headers.get("set-cookie")!;
+    expect(setCookie).toContain("hcd_preview=");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Secure");
+    expect(setCookie).toContain("SameSite=Lax");
+    expect(setCookie).toContain("Expires=Sat, 31 Oct 2026 07:00:00 GMT");
+    const preview = setCookie.split(";", 1)[0]!;
+    expect(await statusOpen(app, preview)).toBe(true);
+    expect((await app.request("/", { redirect: "manual", headers: { cookie: preview } })).status).toBe(302);
+    expect(repository.sessions.size).toBe(1);
+  });
+
+  it("rejects unauthenticated unlock requests and forged unlock cookies", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, beforeOpening);
+    expect((await app.request("/api/admin/preview", { method: "POST" })).status).toBe(401);
+    expect((await app.request("/api/admin/preview", { method: "POST", headers: { "x-admin-password": "wrong" } })).status).toBe(401);
+    const forged = "hcd_preview=forged-value";
+    expect(await statusOpen(app, forged)).toBe(false);
+    expect((await app.request("/", { redirect: "manual", headers: { cookie: forged } })).status).toBe(200);
+    expect(repository.sessions.size).toBe(0);
+  });
+
+  it("keeps unlocks across restarts and invalidates them when the shared password changes", async () => {
+    const repository = new MemoryRepository();
+    const unlock = await createTestApp(repository, beforeOpening).request("/api/admin/preview", { method: "POST", headers: unlockHeaders });
+    const preview = unlock.headers.get("set-cookie")!.split(";", 1)[0]!;
+    expect(await statusOpen(createTestApp(repository, beforeOpening), preview)).toBe(true);
+    const changed = createApp({ repository, now: beforeOpening, config: { adminPassword: "new-staff-password", ackTimeoutMs: 10 } });
+    expect(await statusOpen(changed, preview)).toBe(false);
+  });
+
+  it("accepts stamps and heartbeats from stations before opening", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, beforeOpening);
+    const unlock = await app.request("/api/admin/preview", { method: "POST", headers: unlockHeaders });
+    const preview = unlock.headers.get("set-cookie")!.split(";", 1)[0]!;
+    const cookie = sessionCookie(await app.request("/", { redirect: "manual", headers: { cookie: preview } }));
+    const token = (await (await app.request("/api/me", { headers: { cookie } })).json() as { token: string }).token;
+    const deviceHeaders = { authorization: "Bearer device-key", "content-type": "application/json" };
+    const stamped = await app.request("/api/stamp", { method: "POST", headers: deviceHeaders, body: JSON.stringify({ token, device_id: "dev-01" }) });
+    expect(stamped.status).toBe(200);
+    const heartbeat = await app.request("/api/heartbeat", {
+      method: "POST",
+      headers: deviceHeaders,
+      body: JSON.stringify({ device_id: "dev-01", uptime_seconds: 10, last_stamp_count: 1, pending_queue_count: 0 }),
+    });
+    expect(heartbeat.status).toBe(200);
   });
 });

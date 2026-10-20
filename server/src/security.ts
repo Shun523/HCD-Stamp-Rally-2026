@@ -1,6 +1,11 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const SESSION_COOKIE = "hcd_session";
+export const PREVIEW_COOKIE = "hcd_preview";
+
+// 仕様7章: 開始前の解除Cookieは共有パスワードを鍵にしたHMAC。サーバーに状態を持たず、パスワードを変えると無効になる。
+export const previewCookieValue = (adminPassword: string): string =>
+  createHmac("sha256", adminPassword).update("participant-preview-v1").digest("base64url");
 
 export const randomUrlSafe = (bytes = 32): string => randomBytes(bytes).toString("base64url");
 

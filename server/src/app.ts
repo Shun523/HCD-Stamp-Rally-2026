@@ -1,4 +1,4 @@
-import { randomUrlSafe, hashSecret, readAdminPassword, readDeviceApiKey, secretsEqual, SESSION_COOKIE } from "./security.js";
+import { randomUrlSafe, hashSecret, previewCookieValue, readAdminPassword, readDeviceApiKey, secretsEqual, PREVIEW_COOKIE, SESSION_COOKIE } from "./security.js";
 import { performance } from "node:perf_hooks";
 import { getCookie, setCookie } from "hono/cookie";
 import { bodyLimit } from "hono/body-limit";
@@ -12,12 +12,15 @@ import {
   apiErrorResponseSchema,
   heartbeatRequestSchema,
   stampRequestSchema,
+  type AdminPreviewResponse,
+  type StatusResponse,
 } from "@hcd-stamp-rally/shared";
 import {
   DEFAULT_ACK_TIMEOUT_MS,
   DEFAULT_SECURITY_LIMITS,
   EVENT_END_AT,
   OFFLINE_RESEND_END_AT,
+  PARTICIPANT_OPEN_AT,
   SESSION_COOKIE_EXPIRES_AT,
   SSE_PING_INTERVAL_MS,
   type ServerConfig,
@@ -63,6 +66,8 @@ export function createApp(dependencies: AppDependencies) {
   const config = {
     ackTimeoutMs: dependencies.config?.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS,
     adminPassword: dependencies.config?.adminPassword ?? "",
+    // 仕様4-8: 開放時刻はローカル開発と自動テストだけ上書きする。
+    participantOpenAt: dependencies.config?.participantOpenAt ?? PARTICIPANT_OPEN_AT,
   };
   const hub = dependencies.hub ?? new SseHub();
   const ackTracker = dependencies.ackTracker ?? new AckTracker();
@@ -158,10 +163,20 @@ export function createApp(dependencies: AppDependencies) {
     return c.json(jsonError("unauthorized"), 401);
   };
 
-  // 仕様5-1: 初回アクセスでセッションを発行し、HttpOnly・Secure・SameSite=Lax Cookieを設定する。
+  // 仕様7章: 解除Cookieは共有パスワードから都度計算して照合する。パスワード未設定なら誰も解除できない。
+  const hasPreviewAccess = (c: Context) => {
+    const value = getCookie(c, PREVIEW_COOKIE);
+    return Boolean(config.adminPassword && value && secretsEqual(value, previewCookieValue(config.adminPassword)));
+  };
+
+  // 仕様4-8: 一般開放後は全員、開放前は管理画面で解除した端末だけを参加者として扱う。
+  const isOpenFor = (c: Context, current = now()) => current >= config.participantOpenAt || hasPreviewAccess(c);
+
+  // 仕様5-1・4-8: 初回アクセスでセッションを発行し、HttpOnly・Secure・SameSite=Lax Cookieを設定する。
+  // 一般開放前は発行せず上限カウントも消費しない。Webアプリが待機画面を出す。
   app.get("/", async (c, next) => {
     const existing = getSessionId(c);
-    if (!existing || !(await dependencies.repository.getSession(existing))) {
+    if (isOpenFor(c) && (!existing || !(await dependencies.repository.getSession(existing)))) {
       const address = clientAddress(c, trustedProxyHops);
       const retryAfter = Math.max(sessionsBySource.retryAfter(address), sessionsGlobally.retryAfter("global"));
       if (retryAfter > 0) return rateLimited(c, retryAfter);
@@ -211,6 +226,18 @@ export function createApp(dependencies: AppDependencies) {
       location_note_en: spot.locationNoteEn,
       is_sample: spot.isSample,
     })) });
+  });
+
+  // 仕様4-8・9章: 一般開放の状態をサーバー時刻で返す。DBには触れず、キャッシュさせない。
+  app.get("/api/status", (c) => {
+    const current = now();
+    const body: StatusResponse = {
+      open: isOpenFor(c, current),
+      opens_at: config.participantOpenAt.toISOString(),
+      server_time: current.toISOString(),
+    };
+    c.header("Cache-Control", "no-store");
+    return c.json(body);
   });
 
   // 仕様5-4: 同一セッションの全SSE接続へ stamped と15秒ごとの pingを配信する。
@@ -404,6 +431,21 @@ export function createApp(dependencies: AppDependencies) {
       completed_count: stats.completedCount,
       sample_spots_active: spots.some((spot) => spot.isSample),
     });
+  });
+
+  // 仕様7章: 管理画面で解除した端末だけ、一般開放前も参加者画面を使えるようにする。
+  app.post("/api/admin/preview", (c) => {
+    const rejection = requireAdmin(c);
+    if (rejection) return rejection;
+    setCookie(c, PREVIEW_COOKIE, previewCookieValue(config.adminPassword), {
+      path: "/",
+      httpOnly: true,
+      secure: secureCookies,
+      sameSite: "Lax",
+      expires: EVENT_END_AT,
+    });
+    const body: AdminPreviewResponse = { ok: true };
+    return c.json(body);
   });
 
   if (staticAssets && staticIndex) {
