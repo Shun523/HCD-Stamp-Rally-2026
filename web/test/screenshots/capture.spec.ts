@@ -49,11 +49,22 @@ async function mockedPage(context: BrowserContext, language: Language, stampCoun
     Object.assign(window, { __stampSources: sources });
   }, { initialLanguage: language, seen: introductionSeen });
   const stamps = spots.slice(0, stampCount).map((spot, index) => ({ spot_id: spot.id, stamped_at: `2026-10-31T04:2${index}:05.000Z` }));
+  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: true, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T03:00:00.000Z" }) }));
   await page.route("**/api/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ completed: stampCount === 5, stamps, token: "stamp-token-for-screenshot", token_expires_at: "2026-10-31T07:00:00.000Z" }) }));
   await page.route("**/api/spots", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ spots }) }));
   await page.route("**/api/ack", (route) => route.fulfill({ status: 204 }));
   await page.goto("/");
   if (introductionSeen) await expect(page.getByRole("link", { name: labels[language].book })).toBeVisible();
+  return page;
+}
+
+// 仕様4-8: 一般開放前の状態だけを返す。/api/me などは用意せず、呼ばれないことを確かめる。
+async function waitingPage(context: BrowserContext, language: Language): Promise<Page> {
+  const page = await context.newPage();
+  await page.addInitScript((initialLanguage) => {
+    Object.defineProperty(navigator, "languages", { configurable: true, value: initialLanguage === "ja" ? ["ja-JP"] : ["en-US"] });
+  }, language);
+  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" }) }));
   return page;
 }
 
@@ -73,7 +84,13 @@ async function waitForBook(page: Page): Promise<void> {
 
 async function captureAll(context: BrowserContext, language: Language): Promise<void> {
   const label = labels[language];
-  let page = await mockedPage(context, language, 0, false);
+  let page = await waitingPage(context, language);
+  await page.goto("/");
+  await expect(page.getByText(language === "ja" ? "10月31日（土）10:00" : "Sat, Oct 31, 10:00 (JST)")).toBeVisible();
+  await capture(page, `${language}-waiting.png`);
+  await page.close();
+
+  page = await mockedPage(context, language, 0, false);
   await expect(page.getByRole("button", { name: language === "ja" ? "はじめる" : "Start" })).toBeVisible();
   await capture(page, `${language}-intro.png`);
   await page.close();
@@ -308,4 +325,20 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     await waitForBook(page);
     await page.close();
   }
+});
+
+test("shows only the waiting screen before opening without loading the stamp book", async ({ context }) => {
+  const page = await waitingPage(context, "ja");
+  const participantRequests: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (["/api/me", "/api/events", "/api/spots"].includes(path)) participantRequests.push(path);
+  });
+  await page.goto("/");
+  await expect(page.getByText("スタンプラリーは当日から参加できます", { exact: false })).toBeVisible();
+  await expect(page.locator("[data-stamp-card]")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "スタンプ帳" })).toHaveCount(0);
+  await page.waitForTimeout(500);
+  expect(participantRequests).toEqual([]);
+  await page.close();
 });
