@@ -1,9 +1,11 @@
 import {
   ackRequestSchema,
   adminDevicesResponseSchema,
+  adminPreviewResponseSchema,
   adminStatsResponseSchema,
   meResponseSchema,
   spotsResponseSchema,
+  statusResponseSchema,
 } from "@hcd-stamp-rally/shared";
 import type { AdminDevicesResponse, AdminStatsResponse } from "@hcd-stamp-rally/shared";
 
@@ -37,6 +39,10 @@ export function createParticipantApi(fetcher: Fetcher = fetch) {
       const response = await request(fetcher, "/api/spots");
       return spotsResponseSchema.parse(await response.json());
     },
+    async getStatus() {
+      const response = await request(fetcher, "/api/status", { cache: "no-store" });
+      return statusResponseSchema.parse(await response.json());
+    },
     async acknowledge(eventId: string) {
       const body = ackRequestSchema.parse({ event_id: eventId });
       await request(fetcher, "/api/ack", {
@@ -58,6 +64,10 @@ export function createAdminApi(password: string, fetcher: Fetcher = fetch) {
     async getStats(): Promise<AdminStatsResponse> {
       const response = await request(fetcher, "/api/admin/stats", { headers });
       return adminStatsResponseSchema.parse(await response.json());
+    },
+    async unlockPreview(): Promise<void> {
+      const response = await request(fetcher, "/api/admin/preview", { method: "POST", headers });
+      adminPreviewResponseSchema.parse(await response.json());
     },
   };
 }
