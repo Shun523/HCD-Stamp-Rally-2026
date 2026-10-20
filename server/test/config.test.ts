@@ -38,4 +38,16 @@ describe("server config", () => {
     expect(loadConfig({ K_SERVICE: "test-cloud-run-service", TRUSTED_PROXY_HOPS: "0" }).trustedProxyHops).toBe(0);
     expect(loadConfig({ TRUSTED_PROXY_HOPS: "2" }).trustedProxyHops).toBe(2);
   });
+
+  it("opens to participants at 10:00 on October 31 unless a local override is given", () => {
+    expect(loadConfig({}).participantOpenAt.toISOString()).toBe("2026-10-31T01:00:00.000Z");
+    expect(loadConfig({ PARTICIPANT_OPEN_AT: "2026-10-01T09:00:00+09:00" }).participantOpenAt.toISOString())
+      .toBe("2026-10-01T00:00:00.000Z");
+  });
+
+  it("rejects an opening time without an explicit UTC offset", () => {
+    for (const value of ["", "2026-10-31", "2026-10-31T10:00:00", "tomorrow", "2026-13-01T00:00:00+09:00"]) {
+      expect(() => loadConfig({ PARTICIPANT_OPEN_AT: value })).toThrow("PARTICIPANT_OPEN_AT");
+    }
+  });
 });
