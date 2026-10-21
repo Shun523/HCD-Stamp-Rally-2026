@@ -47,7 +47,7 @@
 - [ ] 会場で実際に使うネットワーク（会場Wi‑Fiまたはテザリング）で、少なくとも1台確認する
 - [ ] iOS Safari で、QR表示中に画面が消灯しない（Wake Lock、spec 4-2）
 - [ ] 数時間の連続稼働で、発熱とバッテリーの持ちを確認する（spec Q-14。未実施なら）
-- [ ] QR 50px での読み取りを、iOS・Android の両方で再確認する
+- [ ] QR 75px（spec v1.11で50pxから変更）での読み取りを、iOS・Android の両方で再確認する
 - [ ] Cloud Logging で押印ログが1行のJSON（`jsonPayload.deviceId` など）で出ていることを確認する
 
 ## C. 運用の決め事
