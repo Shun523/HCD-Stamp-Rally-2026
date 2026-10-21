@@ -156,7 +156,7 @@ flowchart TD
 | NumberBadge | 30px の円、白文字、`--border-thin`。手順の番号。1と3は coral-strong、2は purple |
 | SpotMarker | マップ専用の地点表示。purple の円に白い番号（display 24px）。白の4px の内枠、インクの3px の外枠 |
 | StampSlot | ゴールページとマップで使う押印済み表示。surface の円に `--border`、中に StampImage を85%の大きさで。影なし、タップしない |
-| StampImage | `/stamps/{spotId}.svg` を表示。無いときは仮画像（二重円＋星＋「SPOT 0n」、色は stamp）。傾きはスポットごとに固定（spot-01から順に -8°, 6°, -4°, 8°, -6°） |
+| StampImage | `/images/stamps/{spotId}.png` を表示。無いときは仮画像（二重円＋星＋「SPOT 0n」、色は stamp）。傾きはスポットごとに固定（spot-01から順に -8°, 6°, -4°, 8°, -6°） |
 | ProgressBadge | 64px の円、背景 purple、`--border`。「2/5」を白で。タップしないので影なし |
 | StampCard | 1枚の台紙全体。paper、`--border`、`--shadow-lg`、角丸card、最大幅350px。見出し、案内、上段3・下段2の押印欄、景品引換券を含む |
 | CardStampSlot | 直径84px基準の押印欄。SVGの点線円（2.5px、`stroke-dasharray: 3 5`）、左上の番号バッジ、円下のスポット名。未押印だけbuttonとし、押印済みはStampImageを約112%で重ねる |

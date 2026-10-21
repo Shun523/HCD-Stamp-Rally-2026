@@ -21,9 +21,9 @@
   - 差し替え後、Supabase に `db:seed` を実行し直す（既存行は上書きされる）
 - [ ] A3 画面の文言の差し替え（遊び方3ステップ、完走メッセージ、景品交換所の名称・場所・案内文。日英）: `web/src/data/content.ts`
 - [ ] A4 協賛企業の差し替え（日英の企業名、ロゴ、紹介文、リンク、表示順）: `web/src/data/sponsors.ts`、`web/public/images/sponsors/`
-- [ ] A5 スタンプ画像の差し替え
-  - [ ] Web用5種（SVGまたは背景透過PNG、ファイル名はスポットID）: `web/public/images/stamps/`
-  - [ ] Pi用5種（240×240、ファイル名はスポットID）: `device/hcd_stamp_device/assets/stamps/`
+- [x] A5 スタンプ画像の差し替え（10月21日。絵柄はスポットごとに固定で、乱数で決めた重複なしの割り当て）
+  - [x] Web用5種（SVGまたは背景透過PNG、ファイル名はスポットID）: `web/public/images/stamps/`
+  - [x] Pi用5種（240×240、ファイル名はスポットID）: `device/hcd_stamp_device/assets/stamps/`
 - [ ] A6 初回説明画面のスタンプ機の写真: `web/public/images/stamp-machine.svg` を置き換え
 - [ ] A7 差し替え後の反映
   - [ ] テスト・lint・型チェック・`pnpm test:e2e` を通す
