@@ -44,15 +44,25 @@ class DummyDisplay:
 
 
 class PiCamera:
-    """Picamera2によるPi Camera Module実装（仕様6-2）。"""
+    """Picamera2によるPi Camera Module 2/3実装（仕様6-2）。"""
 
     def __init__(self) -> None:
         from picamera2 import Picamera2  # type: ignore[import-not-found]
 
         self._camera: Any = Picamera2()
+        camera_controls: dict[str, Any] = {"FrameRate": CAMERA_FPS}
+        # 仕様6-2: ピント制御対応のModule 3は利用者指定の位置20で固定する。
+        # Module 2では非対応の制御を送らず、従来のフレームレート設定だけを使う。
+        if {"AfMode", "LensPosition"}.issubset(self._camera.camera_controls):
+            from libcamera import controls  # type: ignore[import-not-found]
+
+            camera_controls.update(
+                AfMode=controls.AfModeEnum.Manual,
+                LensPosition=20.0,
+            )
         config = self._camera.create_video_configuration(
             main={"format": "RGB888", "size": (CAMERA_WIDTH, CAMERA_HEIGHT)},
-            controls={"FrameRate": CAMERA_FPS},
+            controls=camera_controls,
             buffer_count=4,
         )
         self._camera.configure(config)

@@ -27,6 +27,13 @@ APIキーをGitへ追加しないでください。開発PCで起動する場合
 ダミーを使います。実機ではOpenCV、Picamera2、Blinka、
 `adafruit-circuitpython-rgb-display`も導入してください。設定されるカメラは
 640×480・15fpsで、3フレームに1回だけ `cv2.QRCodeDetector` が解析します。
+Camera Module 2と3の両方に対応します。カメラが`AfMode`と`LensPosition`の両方を
+公開している場合（Module 3）は、手動モード（`AfMode=Manual`）で
+`LensPosition=20.0`に固定します。Module 2ではピント制御を指定せず、従来の設定を使います。
+
+Picamera2はカメラ制御用のPythonライブラリ名です。カメラ本体のCamera Module 3（IMX708）にも
+使い、Pi上では`python3-picamera2`をaptで導入します。実機への導入手順は
+[`docs/device-test.md`](../docs/device-test.md) のStep 2を参照してください。
 
 ## 模擬端末モード
 
