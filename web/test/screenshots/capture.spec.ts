@@ -200,9 +200,10 @@ test("uses one QR from every empty slot and restores focus after closing", async
       return { back, circle, qr, qrCode, ring: ring ? { dash: ring.getAttribute("stroke-dasharray"), stroke: ring.getAttribute("stroke-width") } : undefined };
     });
     const path = await qr.locator("path").first().getAttribute("d");
-    expect(dimensions).toEqual({ height: 50, width: 50 });
-    expect(geometry.qrCode?.width).toBe(74);
-    expect(geometry.qrCode?.height).toBe(74);
+    // 仕様4-2: QR本体は75×75 CSSピクセル（1マス3px）、白い余白は12px。
+    expect(dimensions).toEqual({ height: 75, width: 75 });
+    expect(geometry.qrCode?.width).toBe(99);
+    expect(geometry.qrCode?.height).toBe(99);
     expect(Math.abs(((geometry.qr?.left ?? 0) + (geometry.qr?.width ?? 0) / 2) - ((geometry.circle?.left ?? 0) + (geometry.circle?.width ?? 0) / 2))).toBeLessThanOrEqual(0.5);
     expect(Math.abs(((geometry.qr?.top ?? 0) + (geometry.qr?.height ?? 0) / 2) - ((geometry.circle?.top ?? 0) + (geometry.circle?.height ?? 0) / 2))).toBeLessThanOrEqual(0.5);
     expect(geometry.ring).toEqual({ dash: "3 5", stroke: "2.5" });
@@ -317,8 +318,9 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     expect(metrics.circle?.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
     expect(metrics.circle?.top).toBeGreaterThanOrEqual(metrics.header?.bottom ?? 0);
     expect(metrics.back?.top).toBeGreaterThanOrEqual((metrics.header?.bottom ?? 0) + 8);
-    expect(metrics.qr?.width).toBe(50);
-    expect(metrics.qr?.height).toBe(50);
+    // 仕様4-2: どの向き・画面サイズでもQR本体は75×75 CSSピクセルのまま。
+    expect(metrics.qr?.width).toBe(75);
+    expect(metrics.qr?.height).toBe(75);
     expect(metrics.back?.width).toBeGreaterThanOrEqual(48);
     expect(metrics.back?.height).toBeGreaterThanOrEqual(48);
     await page.keyboard.press("Escape");

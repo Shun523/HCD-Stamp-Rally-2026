@@ -43,10 +43,11 @@
   transition: opacity var(--duration-qr-reveal) ease-out;
 }
 
+/* 仕様4-2: 25×25マスのQRを75×75 CSSピクセル（1マス3px）で描き、境界をにじませない。 */
 .qrCode svg {
   display: block;
-  width: 50px;
-  height: 50px;
+  width: 75px;
+  height: 75px;
   image-rendering: pixelated;
 }
 
