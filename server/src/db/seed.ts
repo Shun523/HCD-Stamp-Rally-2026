@@ -4,20 +4,32 @@ import { createDb } from "./client.js";
 import { spots, devices } from "./schema.js";
 import { loadConfig } from "../config.js";
 
-// 仕様4-6: 確定データが届くまでのサンプルスポット。座標・文言・画像は差し替える。
-export const sampleSpots = [1, 2, 3, 4, 5].map((number) => ({
-  id: `spot-${String(number).padStart(2, "0")}`,
-  nameJa: `スポット${number}（サンプル）`,
-  nameEn: `Spot ${number} (Sample)`,
-  displayOrder: number,
-  lat: 34.666 + number * 0.0001,
-  lng: 133.918 + number * 0.0001,
-  descriptionJa: `スポット${number}の案内（サンプル）`,
-  descriptionEn: `Guide for spot ${number} (sample)`,
-  locationNoteJa: null,
-  locationNoteEn: null,
-  isSample: true,
-}));
+// 仕様4-6: スポットの地図上の位置（spot-01から順）。2026-10-21に利用者から受け取った地点。
+const spotLocations = [
+  { lat: 34.6865463, lng: 133.9217822 },
+  { lat: 34.6859605, lng: 133.9216712 },
+  { lat: 34.6867095, lng: 133.9188354 },
+  { lat: 34.6870875, lng: 133.9188562 },
+  { lat: 34.6872645, lng: 133.9208125 },
+];
+
+// 仕様4-6: 確定データが届くまでのサンプルスポット。文言・画像は差し替える。
+export const sampleSpots = spotLocations.map(({ lat, lng }, index) => {
+  const number = index + 1;
+  return {
+    id: `spot-${String(number).padStart(2, "0")}`,
+    nameJa: `スポット${number}（サンプル）`,
+    nameEn: `Spot ${number} (Sample)`,
+    displayOrder: number,
+    lat,
+    lng,
+    descriptionJa: `スポット${number}の案内（サンプル）`,
+    descriptionEn: `Guide for spot ${number} (sample)`,
+    locationNoteJa: null,
+    locationNoteEn: null,
+    isSample: true,
+  };
+});
 
 const keyHash = (key: string) => createHash("sha256").update(key).digest("hex");
 
