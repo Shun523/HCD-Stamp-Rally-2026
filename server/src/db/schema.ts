@@ -1,7 +1,7 @@
 import {
   boolean,
+  doublePrecision,
   integer,
-  real,
   serial,
   text,
   timestamp,
@@ -35,8 +35,9 @@ export const spots = pgTable("spots", {
   nameJa: text("name_ja").notNull(),
   nameEn: text("name_en").notNull(),
   displayOrder: integer("display_order").notNull(),
-  lat: real("lat").notNull(),
-  lng: real("lng").notNull(),
+  // 仕様8章: 座標は倍精度。単精度では地図のピンが十数〜数十mずれる。
+  lat: doublePrecision("lat").notNull(),
+  lng: doublePrecision("lng").notNull(),
   descriptionJa: text("description_ja").notNull(),
   descriptionEn: text("description_en").notNull(),
   locationNoteJa: text("location_note_ja"),

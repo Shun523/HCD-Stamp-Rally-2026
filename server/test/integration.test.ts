@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
@@ -72,6 +73,11 @@ integration("PostgreSQL persistence", () => {
       const persisted = await recreated.getStampsForSession(sessionId);
       expect(persisted).toHaveLength(1);
       expect(persisted[0]?.stampedAt.toISOString()).toBe("2026-10-31T04:24:05.000Z");
+
+      // 仕様4-6・8章: 地図のピンがずれないよう、座標は丸めずに読み出せること。
+      await db.update(spots).set({ lat: 34.6865463, lng: 133.9217822 }).where(eq(spots.id, spotId));
+      const storedSpot = (await recreated.getSpots()).find((spot) => spot.id === spotId);
+      expect(storedSpot).toMatchObject({ lat: 34.6865463, lng: 133.9217822 });
     } finally {
       await sql.unsafe(`delete from sessions where id = '${sessionId}'`);
       await sql.unsafe(`delete from devices where id = '${deviceId}'`);
