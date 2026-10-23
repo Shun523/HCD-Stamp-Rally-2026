@@ -1,4 +1,4 @@
-"""岡山大学ホームカミングデー・スタンプ機制御ソフト。"""
+"""岡山大学ホームカミングデイ・スタンプ機制御ソフト。"""
 
 from .config import DeviceConfig, load_config
 from .models import SendOutcome, SendResult

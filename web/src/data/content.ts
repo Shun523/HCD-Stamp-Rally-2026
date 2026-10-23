@@ -23,7 +23,7 @@ export const content = {
       cardEyebrow: "STAMP RALLY CARD",
       cardTitle: "スタンプ台紙",
       cardUniversity: "岡山大学",
-      cardEvent: "ホームカミングデー",
+      cardEvent: "ホームカミングデイ",
       cardInstructions: "空いている丸をタップして、スタンプ機を押し当ててね。どの順番でもOK。",
       cardA11y: "スタンプ台紙。{total}つのうち{count}つ押印済み",
       cardSlotEmpty: "未押印。QRを表示",

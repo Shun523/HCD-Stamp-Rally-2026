@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hcd-stamp-device"
 version = "0.1.0"
-description = "岡山大学ホームカミングデー・デジタルスタンプラリーのスタンプ機制御ソフト"
+description = "岡山大学ホームカミングデイ・デジタルスタンプラリーのスタンプ機制御ソフト"
 requires-python = ">=3.12"
 dependencies = [
   "opencv-python-headless>=4.10,<5",
