@@ -29,10 +29,10 @@ ACK未到達、参加・完走状況を30秒ごとに更新し、要対応機は
 
 ## コンテンツと画像の差し替え
 
-画面文言、景品交換所の案内、サンプルフラグは [src/data/content.ts](src/data/content.ts) にあります。本番化時は文言を差し替え、`isSample` を `false` にしてください。
+画面文言とサンプルフラグは [src/data/content.ts](src/data/content.ts) にあります。`isSample` は画面文言と協賛企業をあわせたWeb表示内容のフラグです。両方を本番データへ差し替えてから `false` にしてください。
 
-スタンプ絵柄は [public/images/stamps](public/images/stamps) の `spot-01.svg` から `spot-05.svg` を同名のSVGまたは透過PNGへ置き換えます。初回説明の機器写真は [public/images/stamp-machine.svg](public/images/stamp-machine.svg) を置き換えます。コードの変更は不要です。
+スタンプ絵柄は [public/images/stamps](public/images/stamps) の `spot-01.png` から `spot-05.png` を、同名の背景透過PNGへ置き換えます。コードの変更は不要です。
 
 協賛企業は [src/data/sponsors.ts](src/data/sponsors.ts) の配列を表示順どおりに読みます。企業名（日英）、紹介文（日英・任意）、外部リンク（任意）、ロゴのパスを差し替えてください。ロゴは [public/images/sponsors](public/images/sponsors) に同名で置けばコードを変更せず差し替えられます。
 
-スポットの名前・座標・案内文はサーバーのシードデータから `/api/spots` で取得します。本番データへは `server/src/db/seed.ts` のサンプルスポットを差し替えてください。
+スポットの名前・座標・案内文はサーバーのシードデータから `/api/spots` で取得します。本番データへは `server/src/db/spot-data.ts` を書き換え、`db:seed` を実行してください。

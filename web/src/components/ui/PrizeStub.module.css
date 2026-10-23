@@ -49,7 +49,7 @@
 
 .copy { min-width: 0; }
 .eyebrow { margin: 0; color: var(--color-coral-strong); font-size: 12px; font-weight: 900; letter-spacing: 0.14em; line-height: 1.4; }
-.message { margin: var(--space-1) 0 0; font-size: 13px; font-weight: 800; line-height: 1.45; }
+.message { margin: var(--space-1) 0 0; font-size: 13px; font-weight: 800; line-height: 1.45; text-wrap: balance; }
 
 .goalBadge {
   display: grid;
@@ -69,35 +69,13 @@
 .goalBadge small { margin-top: var(--space-1); font-size: 12px; font-weight: 800; line-height: 1.1; }
 
 .complete { background: var(--color-yellow); }
+.complete .content { grid-template-columns: minmax(0, 1fr); }
+.complete .copy { text-align: center; }
 .complete .scissors { background: var(--color-paper); }
 .complete .eyebrow { font-family: var(--font-display); font-size: 22px; letter-spacing: 0; line-height: 1.1; }
-
-.goalButton {
-  display: inline-flex;
-  min-width: 84px;
-  min-height: 52px;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  color: var(--color-surface);
-  background: var(--color-coral-strong);
-  border: var(--border);
-  border-radius: var(--radius-button);
-  box-shadow: var(--shadow-md);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-align: center;
-  transition: transform var(--duration-press), box-shadow var(--duration-press);
-}
-
-.goalButton:active { box-shadow: none; transform: translate(5px, 5px); }
 
 @media (max-width: 359px) {
   .content { min-height: 92px; padding-right: var(--space-1); padding-left: var(--space-1); }
   .message { font-size: 12px; }
   .goalBadge { width: 68px; height: 68px; flex-basis: 68px; }
-  .goalButton { min-width: 76px; }
 }

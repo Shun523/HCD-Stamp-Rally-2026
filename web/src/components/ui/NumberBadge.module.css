@@ -5,12 +5,10 @@
   height: 30px;
   place-items: center;
   color: var(--color-surface);
+  background: var(--color-blue);
   border: var(--border-thin);
   border-radius: 50%;
   font-size: 16px;
   font-weight: 900;
   line-height: 1;
 }
-
-.coral { background: var(--color-coral-strong); }
-.purple { background: var(--color-purple); }

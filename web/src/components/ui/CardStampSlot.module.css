@@ -44,7 +44,7 @@
   height: 24px;
   place-items: center;
   color: var(--color-surface);
-  background: var(--color-purple);
+  background: var(--color-blue);
   border: var(--border-thin);
   border-radius: var(--radius-circle);
   font-size: 12px;
@@ -59,7 +59,7 @@
   width: 100%;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   color: var(--color-ink);
   font-size: 12px;
   font-weight: 900;

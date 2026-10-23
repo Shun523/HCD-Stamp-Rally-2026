@@ -1,7 +1,7 @@
-import { CircleHelp, Gift, LifeBuoy } from "lucide-react";
+import { CircleHelp, LifeBuoy } from "lucide-react";
 import styles from "./InfoTile.module.css";
 
-export type InfoTileKind = "how" | "prizes" | "recovery";
+export type InfoTileKind = "how" | "recovery";
 
 type Props = {
   kind: InfoTileKind;
@@ -9,7 +9,7 @@ type Props = {
   onClick: () => void;
 };
 
-const icons = { how: CircleHelp, prizes: Gift, recovery: LifeBuoy };
+const icons = { how: CircleHelp, recovery: LifeBuoy };
 
 export function InfoTile({ kind, label, onClick }: Props) {
   const Icon = icons[kind];

@@ -51,7 +51,7 @@ export function SpotMap({ copy, language, spots, stampedSpotIds }: Props) {
         const stamped = stampedSpotIds.has(spot.id);
         const icon = stamped
           ? { scaledSize: new maps.Size(44, 44), url: stampAssetPath(spot.id) }
-          : { fillColor: token("--color-purple"), fillOpacity: 1, path: maps.SymbolPath.CIRCLE, scale: 18, strokeColor: token("--color-ink"), strokeWeight: 3 };
+          : { fillColor: token("--color-blue"), fillOpacity: 1, path: maps.SymbolPath.CIRCLE, scale: 18, strokeColor: token("--color-ink"), strokeWeight: 3 };
         new maps.Marker({ icon, label: stamped ? undefined : { color: token("--color-surface"), fontWeight: "900", text: String(index + 1) }, map, position: { lat: spot.lat, lng: spot.lng }, title: language === "ja" ? spot.name_ja : spot.name_en });
       });
       setMapUnavailable(false);

@@ -1,7 +1,7 @@
 import styles from "./NumberBadge.module.css";
 
-type Props = { number: number; tone?: "coral" | "purple" };
+type Props = { number: number };
 
-export function NumberBadge({ number, tone = number === 2 ? "purple" : "coral" }: Props) {
-  return <span aria-hidden="true" className={[styles.badge, styles[tone]].join(" ")}>{number}</span>;
+export function NumberBadge({ number }: Props) {
+  return <span aria-hidden="true" className={styles.badge}>{number}</span>;
 }

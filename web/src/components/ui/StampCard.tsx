@@ -13,14 +13,13 @@ type Props = {
   focusReturnToHeading?: boolean;
   language: Language;
   onFocusReturnHandled: () => void;
-  onGoal: () => void;
   onQr: (origin: QrOrigin) => void;
   spots: Spot[];
   stampedSpotIds: ReadonlySet<string>;
 };
 
 // 仕様4-1 / デザイン4-1: 上段3・下段2の丸い押印欄を持つ1枚の台紙。
-export function StampCard({ activeQrSpotId, copy, focusReturnSpotId, focusReturnToHeading = false, language, onFocusReturnHandled, onGoal, onQr, spots, stampedSpotIds }: Props) {
+export function StampCard({ activeQrSpotId, copy, focusReturnSpotId, focusReturnToHeading = false, language, onFocusReturnHandled, onQr, spots, stampedSpotIds }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const slotElements = useRef(new Map<string, HTMLElement>());
   const count = stampedSpotIds.size;
@@ -53,7 +52,7 @@ export function StampCard({ activeQrSpotId, copy, focusReturnSpotId, focusReturn
           }} stampHere={copy.stampHere} stamped={stamped} stampedLabel={copy.cardSlotStamped} spotId={spot.id} spotName={language === "ja" ? spot.name_ja : spot.name_en} />;
         })}
       </div>
-      <PrizeStub complete={complete} copy={copy} onGoal={onGoal} remaining={Math.max(0, spots.length - count)} />
+      <PrizeStub complete={complete} copy={copy} remaining={Math.max(0, spots.length - count)} />
     </section>
   );
 }

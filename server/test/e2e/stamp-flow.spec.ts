@@ -120,14 +120,15 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
       sameSite: "Lax",
     }]);
     await page.goto(`http://127.0.0.1:${running.port}/`);
-    await expect(page.getByRole("heading", { name: "スタンプラリー" })).toBeVisible();
-    await page.getByRole("button", { name: "はじめる" }).click();
+    // 仕様4-1（v1.12）: 初回説明を挟まず、最初からスタンプ帳とブラウザ保存の注意を出す。
     await expect(page.locator("[data-stamp-card]")).toBeVisible();
+    await expect(page.getByText("スタンプはこのブラウザに保存されます", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "はじめる" })).toHaveCount(0);
     await page.waitForTimeout(250);
 
-    const closeAnimation = async (completed = false) => {
+    const closeAnimation = async () => {
       await expect(page.getByRole("dialog")).toBeVisible({ timeout: 10_000 });
-      await page.getByRole("dialog").getByRole("button", { name: completed ? "ゴールへ" : "とじる" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "とじる" }).click();
     };
 
     await simulateDevice(configPaths[0]!, "--simulate-token", token);
@@ -154,8 +155,12 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
       await closeAnimation();
     }
     await simulateDevice(configPaths[4]!, "--simulate-token", token);
-    await closeAnimation(true);
-    await expect(page.getByRole("heading", { name: "おめでとう!" })).toBeVisible();
+    await closeAnimation();
+    // 仕様4-1・Q-31（v1.12）: 完走はゴールページへ移らず、景品引換券のCOMPLETE表示で示す。
+    await expect(page.locator('[data-card-stamp-slot][data-stamped="true"]')).toHaveCount(5);
+    await expect(page.getByText("ガクチョウガチャコイン引換券GET!")).toBeVisible();
+    await expect(page.getByText("ホームカミングデイ総合案内でこの画面を見せてください")).toBeVisible();
+    await expect(page.getByRole("button", { name: "ゴールへ" })).toHaveCount(0);
   } finally {
     await stopServer(running.server).catch(() => undefined);
     await rm(temporaryDirectory, { recursive: true, force: true });
@@ -163,7 +168,7 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
 });
 
 // 仕様4-8・7章: 一般開放前は待機画面だけを出し、管理画面で解除した端末だけが通常の流れへ進める。
-test("一般開放前は待機画面を出し、管理画面で解除した端末だけ初回説明へ進める", async ({ page, context }) => {
+test("一般開放前は待機画面を出し、管理画面で解除した端末だけスタンプ帳へ進める", async ({ page, context }) => {
   const repository = new MemoryRepository();
   const app = createApp({
     repository,
@@ -183,7 +188,7 @@ test("一般開放前は待機画面を出し、管理画面で解除した端�
     const unlock = await page.request.post(`${origin}/api/admin/preview`, { headers: { "x-admin-password": "e2e-staff-password" } });
     expect(unlock.status()).toBe(200);
     await page.goto(`${origin}/`);
-    await expect(page.getByRole("button", { name: "はじめる" })).toBeVisible();
+    await expect(page.locator("[data-stamp-card]")).toBeVisible();
     expect((await context.cookies(origin)).map((cookie) => cookie.name)).toContain(SESSION_COOKIE);
     expect(repository.sessions.size).toBe(1);
   } finally {

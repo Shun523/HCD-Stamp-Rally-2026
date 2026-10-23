@@ -11,30 +11,35 @@ const outputDirectory = fileURLToPath(new URL("../../../docs/screenshots/", impo
 mkdirSync(outputDirectory, { recursive: true });
 
 const labels = {
-  ja: { back: "スタンプ台紙にもどる", book: "スタンプ帳", close: "とじる", goal: "ゴールページを開く", how: "遊び方", map: "マップ", prizes: "景品交換所の案内", recovery: "スタンプが消えた方へ", sponsors: "協賛企業" },
-  en: { back: "Back to stamp card", book: "Stamps", close: "Close", goal: "Open goal page", how: "How to play", map: "Map", prizes: "Prizes", recovery: "Lost stamps?", sponsors: "Sponsors" },
+  ja: { back: "スタンプ帳にもどる", book: "スタンプ帳", close: "とじる", how: "遊び方", map: "マップ", recovery: "スタンプが消えた方へ", sponsors: "協賛企業" },
+  en: { back: "Back to stamp book", book: "Stamps", close: "Close", how: "How to play", map: "Map", recovery: "Lost stamps?", sponsors: "Sponsors" },
 } as const;
 
-const spots = [1, 2, 3, 4, 5].map((number) => ({
-  description_en: `Sample guidance for spot ${number}.`,
-  description_ja: `スポット${number}の案内文です（サンプル）。`,
-  display_order: number,
-  id: `spot-${String(number).padStart(2, "0")}`,
-  is_sample: true,
-  lat: 34.685 + number / 10_000,
-  lng: 133.92 + number / 10_000,
+// 仕様4-6: スクリーンショットは server/src/db/spot-data.ts の確定したスポット情報で撮る。
+const spotContent = [
+  { name_ja: "ホームカミングデイ総合案内", name_en: "Homecoming Day Information Desk", description_ja: "ホームカミングデイ会場では様々なイベントが行われています。限定ガクチョウガチャもここに設置されています。", description_en: "A variety of events are taking place across the Homecoming Day venue. The limited-edition \"Gakucho Gacha\" capsule toy machine is also located here." },
+  { name_ja: "DS部店舗", name_en: "Data Science Club Booth", description_ja: "DS部の店舗は、和紙で淹れるコーヒー屋さんをやっています。", description_en: "The Data Science Club is running a coffee stand that brews coffee through washi (Japanese paper) filters." },
+  { name_ja: "C棟入口", name_en: "Building C Entrance", description_ja: "C棟入口近くのステージでは様々なパフォーマンスが行われます。", description_en: "A variety of performances take place on the stage near the Building C entrance." },
+  { name_ja: "保健管理センター入口", name_en: "Health Service Center Entrance", description_ja: "保健管理センター近くのステージでは様々なパフォーマンスが行われます。", description_en: "A variety of performances take place on the stage near the Health Service Center." },
+  { name_ja: "50周年記念館", name_en: "50th Anniversary Hall", description_ja: "50周年記念館では、様々な式典が行われています。", description_en: "Various ceremonies are being held at the 50th Anniversary Hall." },
+];
+
+const spots = spotContent.map((content, index) => ({
+  ...content,
+  display_order: index + 1,
+  id: `spot-${String(index + 1).padStart(2, "0")}`,
+  is_sample: false,
+  lat: 34.685 + (index + 1) / 10_000,
+  lng: 133.92 + (index + 1) / 10_000,
   location_note_en: null,
   location_note_ja: null,
-  name_en: `Spot ${number} (Sample)`,
-  name_ja: `スポット${number}（サンプル）`,
 }));
 
-async function mockedPage(context: BrowserContext, language: Language, stampCount: number, introductionSeen = true): Promise<Page> {
+async function mockedPage(context: BrowserContext, language: Language, stampCount: number): Promise<Page> {
   const page = await context.newPage();
-  await page.addInitScript(({ initialLanguage, seen }) => {
+  await page.addInitScript(({ initialLanguage }) => {
     Object.defineProperty(navigator, "languages", { configurable: true, value: initialLanguage === "ja" ? ["ja-JP"] : ["en-US"] });
     localStorage.clear();
-    if (seen) localStorage.setItem("hcd-stamp-rally-introduction-seen", "true");
     const sources: MockSource[] = [];
     class MockEventSource {
       public onerror: ((event: Event) => void) | null = null;
@@ -47,14 +52,14 @@ async function mockedPage(context: BrowserContext, language: Language, stampCoun
     }
     Object.defineProperty(window, "EventSource", { configurable: true, value: MockEventSource });
     Object.assign(window, { __stampSources: sources });
-  }, { initialLanguage: language, seen: introductionSeen });
+  }, { initialLanguage: language });
   const stamps = spots.slice(0, stampCount).map((spot, index) => ({ spot_id: spot.id, stamped_at: `2026-10-31T04:2${index}:05.000Z` }));
   await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: true, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T03:00:00.000Z" }) }));
   await page.route("**/api/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ completed: stampCount === 5, stamps, token: "stamp-token-for-screenshot", token_expires_at: "2026-10-31T07:00:00.000Z" }) }));
   await page.route("**/api/spots", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ spots }) }));
   await page.route("**/api/ack", (route) => route.fulfill({ status: 204 }));
   await page.goto("/");
-  if (introductionSeen) await expect(page.getByRole("link", { name: labels[language].book })).toBeVisible();
+  await expect(page.getByRole("link", { name: labels[language].book })).toBeVisible();
   return page;
 }
 
@@ -90,11 +95,6 @@ async function captureAll(context: BrowserContext, language: Language): Promise<
   await capture(page, `${language}-waiting.png`);
   await page.close();
 
-  page = await mockedPage(context, language, 0, false);
-  await expect(page.getByRole("button", { name: language === "ja" ? "はじめる" : "Start" })).toBeVisible();
-  await capture(page, `${language}-intro.png`);
-  await page.close();
-
   page = await mockedPage(context, language, 0);
   await capture(page, `${language}-book-0.png`);
   await page.close();
@@ -104,10 +104,8 @@ async function captureAll(context: BrowserContext, language: Language): Promise<
   await page.close();
 
   page = await mockedPage(context, language, 5);
+  await expect(page.getByText(language === "ja" ? "ガクチョウガチャコイン引換券GET!" : "Gakucho Gacha Coin Ticket GET!")).toBeVisible();
   await capture(page, `${language}-book-5.png`);
-  await page.getByRole("button", { name: label.goal }).click();
-  await expect(page.getByRole("heading", { name: language === "ja" ? "おめでとう!" : "Congratulations!" })).toBeVisible();
-  await capture(page, `${language}-goal.png`);
   await page.close();
 
   page = await mockedPage(context, language, 0);
@@ -118,7 +116,7 @@ async function captureAll(context: BrowserContext, language: Language): Promise<
   await page.close();
 
   page = await mockedPage(context, language, 0);
-  for (const [kind, buttonName] of [["how", label.how], ["prizes", label.prizes], ["recovery", label.recovery]] as const) {
+  for (const [kind, buttonName] of [["how", label.how], ["recovery", label.recovery]] as const) {
     await page.getByRole("button", { name: buttonName }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await capture(page, `${language}-popup-${kind}.png`);
@@ -195,7 +193,7 @@ test("uses one QR from every empty slot and restores focus after closing", async
       const circle = document.querySelector<HTMLElement>("[data-qr-stamp-circle]")?.getBoundingClientRect();
       const qrCode = document.querySelector<HTMLElement>("[data-qr-code-container]")?.getBoundingClientRect();
       const qr = document.querySelector<SVGElement>('[aria-label="Stamp QR code"]')?.getBoundingClientRect();
-      const back = document.querySelector<HTMLButtonElement>('[aria-label="スタンプ台紙にもどる"]')?.getBoundingClientRect();
+      const back = document.querySelector<HTMLButtonElement>('[aria-label="スタンプ帳にもどる"]')?.getBoundingClientRect();
       const ring = document.querySelector<SVGCircleElement>("[data-qr-stamp-circle] circle");
       return { back, circle, qr, qrCode, ring: ring ? { dash: ring.getAttribute("stroke-dasharray"), stroke: ring.getAttribute("stroke-width") } : undefined };
     });
@@ -304,7 +302,7 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     const metrics = await page.evaluate(() => {
       const circle = document.querySelector<HTMLElement>("[data-qr-stamp-circle]")?.getBoundingClientRect();
       const qr = document.querySelector<SVGElement>('[aria-label="Stamp QR code"]')?.getBoundingClientRect();
-      const back = document.querySelector<HTMLButtonElement>('[aria-label="スタンプ台紙にもどる"]')?.getBoundingClientRect();
+      const back = document.querySelector<HTMLButtonElement>('[aria-label="スタンプ帳にもどる"]')?.getBoundingClientRect();
       const header = document.querySelector<HTMLElement>("[data-participant-header]")?.getBoundingClientRect();
       window.scrollTo(100, 100);
       return { back, circle, header, qr, scrollX: window.scrollX, scrollY: window.scrollY, scrollWidth: document.documentElement.scrollWidth, viewportHeight: window.innerHeight, viewportWidth: window.innerWidth };

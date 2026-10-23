@@ -31,7 +31,7 @@
 
 .spotMarker {
   color: var(--color-surface);
-  background: var(--color-purple);
+  background: var(--color-blue);
   border: var(--border);
   box-shadow: inset 0 0 0 4px var(--color-surface), var(--shadow-sm);
   font-family: var(--font-display);
@@ -50,7 +50,7 @@
   flex: 0 0 64px;
   place-items: center;
   color: var(--color-surface);
-  background: var(--color-purple);
+  background: var(--color-blue);
   border: var(--border);
   border-radius: 50%;
   font-family: var(--font-display);
