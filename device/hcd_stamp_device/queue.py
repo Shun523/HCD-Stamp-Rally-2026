@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import tempfile
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -32,7 +35,11 @@ class PersistentStampQueue:
         try:
             raw: Any
             with self._path.open(encoding="utf-8") as file:
-                raw = json.load(file)
+                contents = file.read()
+            if contents == "":
+                self._recover_empty_file()
+                return
+            raw = json.loads(contents)
             if not isinstance(raw, list):
                 raise ValueError("キューのルートは配列でなければなりません")
             for item in raw:
@@ -47,6 +54,31 @@ class PersistentStampQueue:
         except (OSError, ValueError, json.JSONDecodeError) as error:
             raise RuntimeError(f"再送キューを読み込めません: {self._path}") from error
 
+    def _recover_empty_file(self) -> None:
+        """確認済みの復旧方針: 0バイトだけを保全し、空キューで起動する（仕様6-7/6-8）。"""
+
+        temporary = self._path.with_name(f"{self._path.name}.tmp")
+        if temporary.exists():
+            raise ValueError(f"書き込み途中の一時ファイルが残っています: {temporary}")
+        # 既存の退避ファイルを上書きせず、元ファイルの時刻・内容をそのまま保管する。
+        descriptor, name = tempfile.mkstemp(
+            prefix=f"{self._path.name}.empty-", suffix=".bak", dir=self._path.parent
+        )
+        os.close(descriptor)
+        backup = Path(name)
+        try:
+            self._path.replace(backup)
+        except OSError:
+            backup.unlink()
+            raise
+        self._persist()
+        logging.getLogger(__name__).warning(
+            "再送キューが0バイトのため退避し、空のキューで起動します: queue=%s backup=%s。"
+            "以前の未送信データが失われていないことを示すものではありません",
+            self._path,
+            backup,
+        )
+
     def _persist(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self._path.with_name(f"{self._path.name}.tmp")
@@ -57,7 +89,16 @@ class PersistentStampQueue:
         with temporary.open("w", encoding="utf-8") as file:
             json.dump(records, file, ensure_ascii=False, separators=(",", ":"))
             file.flush()
+            # 仕様6-7: 内容のディスク同期が完了してから、前のキューと置き換える。
+            os.fsync(file.fileno())
         temporary.replace(self._path)
+        if os.name == "posix":
+            # Pi/Linuxでは名前の置換も永続化してから、一時保存の完了を返す（仕様6-7）。
+            directory = os.open(self._path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
 
     def enqueue(self, item: QueuedStamp) -> bool:
         """未登録なら追加する。追加済みなら古いタイムスタンプを保つ。"""

@@ -171,20 +171,29 @@ Piの名前がWSLから解決できない場合は、2-2で確認したIPアド�
 `.venv`やローカルの設定ファイルは転送しない。
 
 ```sh
+(
+set -eu
 rsync -a --exclude .venv --exclude '.*_cache' --exclude '*.egg-info' \
   --exclude __pycache__ --exclude config.toml \
-  device/ <SSHユーザー>@<Piホスト名>.local:/tmp/hcd-device/
+  device/ <SSHユーザー>@<Piホスト名>.local:hcd-device-source/
+ssh <SSHユーザー>@<Piホスト名>.local 'sync -f "$HOME/hcd-device-source"'
+)
 ```
+
+転送先はPiのSSHユーザーの `~/hcd-device-source/`（`admin`なら
+`/home/admin/hcd-device-source/`）で、SDカード上に残る。再起動で消えることがある
+`/tmp` はソースの保存先に使わない。以降も転送時と同じSSHユーザーで作業する。
 
 **Pi上で実行する。** 新規セットアップの機体で、実行ユーザーとアプリケーションを用意する。
 Picamera2はapt版を使うため、venvは`--system-site-packages`で作る。
 
 ```sh
+tar -czf "$HOME/hcd-stamp-device.tar.gz" -C "$HOME/hcd-device-source" .
 sudo useradd -r -M -s /usr/sbin/nologin -G video,spi,gpio stamp
 sudo mkdir -p /opt/hcd-stamp-device /etc/hcd-stamp-device
 sudo python3 -m venv --system-site-packages /opt/hcd-stamp-device/.venv
 sudo apt install -y python3-dev build-essential
-sudo /opt/hcd-stamp-device/.venv/bin/pip install /tmp/hcd-device \
+sudo /opt/hcd-stamp-device/.venv/bin/pip install "$HOME/hcd-stamp-device.tar.gz" \
   adafruit-blinka adafruit-circuitpython-rgb-display
 ```
 
@@ -194,8 +203,9 @@ sudo /opt/hcd-stamp-device/.venv/bin/pip install /tmp/hcd-device \
 既に作ったユーザーやvenvはそのままで、失敗したインストールだけをやり直す。
 
 ```sh
+tar -czf "$HOME/hcd-stamp-device.tar.gz" -C "$HOME/hcd-device-source" .
 sudo apt install -y python3-dev build-essential
-sudo /opt/hcd-stamp-device/.venv/bin/pip install /tmp/hcd-device \
+sudo /opt/hcd-stamp-device/.venv/bin/pip install "$HOME/hcd-stamp-device.tar.gz" \
   adafruit-blinka adafruit-circuitpython-rgb-display
 ```
 
@@ -233,17 +243,18 @@ sudo -u stamp /opt/hcd-stamp-device/.venv/bin/python -c 'from picamera2 import P
 この手順が必要。pipはアプリを入れるが、systemdのserviceファイルは配置しない。
 
 ```sh
-sudo cp /tmp/hcd-device/systemd/hcd-stamp-device.service /opt/hcd-stamp-device/
+sudo cp "$HOME/hcd-device-source/systemd/hcd-stamp-device.service" /opt/hcd-stamp-device/
+sudo sync -f /opt/hcd-stamp-device
 ls -l /opt/hcd-stamp-device/hcd-stamp-device.service
 ```
 
-serviceファイルが表示されることを確認して2-5へ進む。`/tmp/hcd-device/`は再起動で消えることが
-あるため、常駐化用のファイルを`/opt/hcd-stamp-device/`へ保存しておき、3-4で使う。
+serviceファイルが表示されることを確認して2-5へ進む。ソースはホームディレクトリに残し、
+常駐化用のファイルは`/opt/hcd-stamp-device/`へ保存して3-4で使う。
 
 ### 2-5. 機体の設定ファイルを作る（Pi）
 
 ```sh
-sudo cp /tmp/hcd-device/config.example.toml /etc/hcd-stamp-device/config.toml
+sudo cp "$HOME/hcd-device-source/config.example.toml" /etc/hcd-stamp-device/config.toml
 sudo chown stamp:stamp /etc/hcd-stamp-device/config.toml
 sudo chmod 600 /etc/hcd-stamp-device/config.toml
 sudo nano /etc/hcd-stamp-device/config.toml
@@ -366,7 +377,7 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
 | `api_key` を誤った値にして再起動し、読ませる | 工具アイコンと「スタッフを呼んでください」が5秒表示され、ダッシュボードで「断」になる |
 | サーバーを止めて読ませる | 黄色の背景と「あとで反映されます」が3秒表示される。未送信キューが増える |
 | そのままPiを再起動し、サーバーを再開する | キューが失われず、5秒間隔で再送されてスタンプ帳に反映される |
-| Piの電源を抜いて90秒待つ | ダッシュボードで「断」になり、音またはブラウザ通知が出る |
+| `sudo poweroff`で終了処理が完了してから電源を抜き、90秒待つ | ダッシュボードで「断」になり、音またはブラウザ通知が出る |
 
 ### 3-4. 常駐化と筐体での確認
 
@@ -377,23 +388,23 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
    ```
 
    見つからない場合は、2-4のserviceファイルの保存が未完了。この手順書の修正前にインストールを
-   済ませた機体でも、次のコピーが必要になる。`/tmp/hcd-device`内の元ファイルを確認して保存する。
+   済ませた機体でも、次のコピーが必要になる。`~/hcd-device-source/`内の元ファイルを確認して保存する。
 
    ```sh
-   ls -l /tmp/hcd-device/systemd/hcd-stamp-device.service
-   sudo cp /tmp/hcd-device/systemd/hcd-stamp-device.service /opt/hcd-stamp-device/
+   ls -l "$HOME/hcd-device-source/systemd/hcd-stamp-device.service"
+   sudo cp "$HOME/hcd-device-source/systemd/hcd-stamp-device.service" /opt/hcd-stamp-device/
    ```
 
    元ファイルも無い場合だけ、**開発PCのリポジトリ直下**からserviceファイルを転送し直す。
 
    ```sh
-   scp device/systemd/hcd-stamp-device.service <SSHユーザー>@<Piホスト名>.local:/tmp/
+   scp device/systemd/hcd-stamp-device.service <SSHユーザー>@<Piホスト名>.local:hcd-stamp-device.service
    ```
 
    転送したファイルを**Pi上で**保存する。アプリの再インストールは不要。
 
    ```sh
-   sudo cp /tmp/hcd-stamp-device.service /opt/hcd-stamp-device/
+   sudo cp "$HOME/hcd-stamp-device.service" /opt/hcd-stamp-device/
    ```
 
    **保存が成功してから**systemdに登録する。コピーに失敗した場合は、この先を実行せず元ファイルを
@@ -412,8 +423,11 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
    終了できる（サービスは動き続ける）。
 
    - [ ] 電源投入からサービス開始まで60秒以内（6-8）
+   - [ ] `sudo reboot` 後、ソースの再転送や再インストールをせずにカメラ映像が出て、
+     60秒以上動き続ける。`journalctl -u hcd-stamp-device -b --no-pager` に例外や再起動の繰り返しがない
    - [ ] `sudo systemctl kill -s KILL hcd-stamp-device` の5秒後に自動で再起動する
-   - [ ] 電源投入を数回繰り返し、液晶のカメラ映像が止まったままにならない。起動直後にカメラが
+   - [ ] `sudo poweroff` による終了処理の完了後に電源を外し、電源投入を数回繰り返しても、
+     液晶のカメラ映像が止まったままにならない。起動直後にカメラが
      止まった場合も、ログに「メインループが5秒止まりました」が出て、15秒ほどで映像が戻る
    - [ ] 再起動を繰り返す機体がダッシュボードで「正常」に見えない。カメラのケーブルを外した状態で電源を入れる（通電中に抜き差ししない）と、90秒ほどで「断」になりアラートが出る
 
