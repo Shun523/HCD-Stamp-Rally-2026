@@ -1,14 +1,14 @@
 import { ExternalLink } from "lucide-react";
-import type { Sponsor } from "../../data/sponsors.js";
+import type { AboutItem } from "../../data/about.js";
 import type { Language } from "../../data/content.js";
-import styles from "./SponsorCard.module.css";
+import styles from "./AboutCard.module.css";
 
-type Props = { language: Language; sponsor: Sponsor };
+type Props = { item: AboutItem; language: Language };
 
-export function SponsorCard({ language, sponsor }: Props) {
-  const name = language === "ja" ? sponsor.nameJa : sponsor.nameEn;
-  const description = language === "ja" ? sponsor.descriptionJa : sponsor.descriptionEn;
-  const contents = <><span className={styles.logoFrame}><img alt={`${name} logo`} src={sponsor.logoPath} /></span><strong>{name}</strong>{description && <span className={styles.description}>{description}</span>}{sponsor.url && <ExternalLink aria-hidden="true" className={styles.external} size={18} strokeWidth={2.25} />}</>;
-  if (sponsor.url) return <a className={[styles.card, styles.link].join(" ")} href={sponsor.url} rel="noreferrer" target="_blank">{contents}</a>;
+export function AboutCard({ item, language }: Props) {
+  const name = language === "ja" ? item.nameJa : item.nameEn;
+  const description = language === "ja" ? item.descriptionJa : item.descriptionEn;
+  const contents = <><span className={styles.photoFrame}><img alt="" src={item.photoPath} /></span><span className={styles.name}><strong>{name}</strong>{item.url && <ExternalLink aria-hidden="true" size={18} strokeWidth={2.25} />}</span><span className={styles.description}>{description}</span></>;
+  if (item.url) return <a className={[styles.card, styles.link].join(" ")} href={item.url} rel="noreferrer" target="_blank">{contents}</a>;
   return <article className={styles.card}>{contents}</article>;
 }

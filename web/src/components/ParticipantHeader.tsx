@@ -30,7 +30,7 @@ export function ParticipantHeader({ active, copy, headerRef, isQrActive = false,
         <Chip>{copy.eventChip}</Chip>
         <IconButton label={copy.switchLanguage} type="button" onClick={() => onLanguageChange(language === "ja" ? "en" : "ja")}><span className={styles.language}>{language === "ja" ? "EN" : "日本語"}</span></IconButton>
       </div>
-      <HeaderTabs active={active} labels={{ book: copy.tabBook, map: copy.tabMap, sponsors: copy.tabSponsors }} onSelect={onTabChange} />
+      <HeaderTabs active={active} labels={{ book: copy.tabBook, map: copy.tabMap, about: copy.tabAbout }} onSelect={onTabChange} />
     </header>
   );
 }

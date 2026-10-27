@@ -1,17 +1,16 @@
-export type Sponsor = {
-  descriptionEn?: string;
-  descriptionJa?: string;
+export type AboutItem = {
+  descriptionEn: string;
+  descriptionJa: string;
   displayOrder: number;
-  logoPath: string;
   nameEn: string;
   nameJa: string;
+  photoPath: string;
   url?: string;
 };
 
-// 仕様4-6: 確定データが届くまで、協賛企業はデータファイルだけで差し替えられるサンプルを使う。
-export const sponsors: Sponsor[] = [
-  { displayOrder: 1, nameJa: "岡山サンプル商会（サンプル）", nameEn: "Okayama Sample Co. (Sample)", descriptionJa: "地域の学びと交流を応援しています。", descriptionEn: "Supporting learning and connection in the community.", logoPath: "/images/sponsors/sponsor-01.svg", url: "https://www.okayama-u.ac.jp/" },
-  { displayOrder: 2, nameJa: "桃太郎テクノロジー（サンプル）", nameEn: "Momotaro Technology (Sample)", descriptionJa: "未来のキャンパスを支える企業です。", descriptionEn: "A company supporting the campus of tomorrow.", logoPath: "/images/sponsors/sponsor-02.svg" },
-  { displayOrder: 3, nameJa: "岡山まちづくり会（サンプル）", nameEn: "Okayama Community Group (Sample)", descriptionJa: "人が集まる場づくりに取り組んでいます。", descriptionEn: "Creating welcoming places for people to gather.", logoPath: "/images/sponsors/sponsor-03.svg" },
-  { displayOrder: 4, nameJa: "キャンパスパートナーズ（サンプル）", nameEn: "Campus Partners (Sample)", descriptionJa: "ホームカミングデイを応援しています。", descriptionEn: "Proud supporters of Homecoming Day.", logoPath: "/images/sponsors/sponsor-04.svg" },
+// 仕様4-6: 紹介はデータファイルと写真だけで差し替えられる。写真は各サイトのトップ画面（10月27日撮影）。
+export const aboutItems: AboutItem[] = [
+  { displayOrder: 1, nameJa: "ホームカミングデイ公式サイト", nameEn: "Homecoming Day Website", descriptionJa: "出店ブース・イベント内容をご覧いただけます。", descriptionEn: "See the booths and events of Homecoming Day.", photoPath: "/images/about/about-01.jpg", url: "https://alumni.soumukikakusoumu.okayama-u.ac.jp/hcd/" },
+  { displayOrder: 2, nameJa: "学祭公式サイト", nameEn: "Campus Festival Website", descriptionJa: "学祭の企画や出店の情報がまとめられています。", descriptionEn: "Find the events and stalls of the campus festival.", photoPath: "/images/about/about-02.jpg", url: "https://tengyuanyoushen277.wixsite.com/okayama-university-f" },
+  { displayOrder: 3, nameJa: "DS部紹介", nameEn: "About DS Club", descriptionJa: "ホームカミングデイの運営に携わっているサークルです。", descriptionEn: "A student club that helps run Homecoming Day.", photoPath: "/images/about/about-03.jpg", url: "https://okadai-dsc.studio.site/" },
 ];

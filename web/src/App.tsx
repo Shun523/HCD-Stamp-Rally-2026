@@ -8,7 +8,7 @@ import { InfoPopup } from "./components/InfoPopup.js";
 import { ParticipantGate } from "./components/ParticipantGate.js";
 import { ParticipantHeader } from "./components/ParticipantHeader.js";
 import { QrDialog } from "./components/QrDialog.js";
-import { SponsorsPage } from "./components/SponsorsPage.js";
+import { AboutPage } from "./components/AboutPage.js";
 import { SpotMap } from "./components/SpotMap.js";
 import { StampAnimation } from "./components/StampAnimation.js";
 import { StampBook } from "./components/StampBook.js";
@@ -21,7 +21,7 @@ import { shouldShowStampAnimation } from "./stamp-events.js";
 import "./styles.css";
 import styles from "./App.module.css";
 
-type Screen = "loading" | "book" | "qr" | "map" | "sponsors";
+type Screen = "loading" | "book" | "qr" | "map" | "about";
 type QrCloseDestination = ParticipantTab;
 type QrHistoryState = { hcdStampRallyQr: true; qrOrigin: QrOrigin };
 
@@ -209,7 +209,7 @@ export function ParticipantApp() {
   const stampedSpotIds = new Set(me?.stamps.map((stamp) => stamp.spot_id) ?? []);
   const animationSpot = orderedSpots.find((spot) => spot.id === animation?.spot_id);
   const animationSpotName = animationSpot ? (language === "ja" ? animationSpot.name_ja : animationSpot.name_en) : animation?.spot_id ?? "";
-  const activeTab = screen === "map" ? "map" : screen === "sponsors" ? "sponsors" : "book";
+  const activeTab = screen === "map" ? "map" : screen === "about" ? "about" : "book";
   const openTab = (tab: ParticipantTab) => {
     setPopup(undefined);
     if (screenRef.current === "qr") {
@@ -227,7 +227,7 @@ export function ParticipantApp() {
     case "book": body = stampBook; break;
     case "qr": body = stampBook; break;
     case "map": body = <SpotMap copy={copy} language={language} spots={spots} stampedSpotIds={stampedSpotIds} />; break;
-    case "sponsors": body = <SponsorsPage copy={copy} language={language} />; break;
+    case "about": body = <AboutPage copy={copy} language={language} />; break;
   }
 
   const showHeader = screen !== "loading";

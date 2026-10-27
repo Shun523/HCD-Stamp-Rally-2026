@@ -1,14 +1,14 @@
 export type Language = "ja" | "en";
 
 export const content = {
-  isSample: true,
+  isSample: false,
   copy: {
     ja: {
       eventChip: "HOMECOMING DAY 2026",
       switchLanguage: "English",
       tabBook: "スタンプ帳",
       tabMap: "マップ",
-      tabSponsors: "協賛企業",
+      tabAbout: "紹介",
       close: "とじる",
       backToBook: "スタンプ帳にもどる",
       browserNotice: "スタンプはこのブラウザに保存されます。別のアプリやブラウザで開くと最初からになります",
@@ -40,8 +40,8 @@ export const content = {
       spots: "スポット一覧",
       stamped: "GET!",
       notStamped: "未押印",
-      sponsorsTitle: "協賛企業",
-      sponsorsHint: "このスタンプラリーは、次の企業・団体のご協賛により開催しています。",
+      aboutTitle: "紹介",
+      aboutHint: "ホームカミングデイと学祭、そしてこのスタンプラリーをつくったDS部を紹介します。",
       loading: "読み込み中…",
       sessionError: "スタンプ帳を更新できませんでした。通信を確認してください。",
       spotsError: "スポット情報を取得できませんでした。",
@@ -55,7 +55,7 @@ export const content = {
       switchLanguage: "日本語",
       tabBook: "Stamps",
       tabMap: "Map",
-      tabSponsors: "Sponsors",
+      tabAbout: "About",
       close: "Close",
       backToBook: "Back to stamp book",
       browserNotice: "Your stamps are saved in this browser. If you open this in another app or browser, you will start over.",
@@ -87,8 +87,8 @@ export const content = {
       spots: "Spot list",
       stamped: "GET!",
       notStamped: "Not collected",
-      sponsorsTitle: "Sponsors",
-      sponsorsHint: "This stamp rally is made possible by the following companies and organizations.",
+      aboutTitle: "About",
+      aboutHint: "Learn about Homecoming Day, the campus festival, and DS Club, the students who built this stamp rally.",
       loading: "Loading…",
       sessionError: "We could not update your stamp book. Please check your connection.",
       spotsError: "We could not load spot information.",

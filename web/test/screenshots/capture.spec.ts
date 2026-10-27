@@ -11,8 +11,8 @@ const outputDirectory = fileURLToPath(new URL("../../../docs/screenshots/", impo
 mkdirSync(outputDirectory, { recursive: true });
 
 const labels = {
-  ja: { back: "スタンプ帳にもどる", book: "スタンプ帳", close: "とじる", how: "遊び方", map: "マップ", recovery: "スタンプが消えた方へ", sponsors: "協賛企業" },
-  en: { back: "Back to stamp book", book: "Stamps", close: "Close", how: "How to play", map: "Map", recovery: "Lost stamps?", sponsors: "Sponsors" },
+  ja: { back: "スタンプ帳にもどる", book: "スタンプ帳", close: "とじる", how: "遊び方", map: "マップ", recovery: "スタンプが消えた方へ", about: "紹介" },
+  en: { back: "Back to stamp book", book: "Stamps", close: "Close", how: "How to play", map: "Map", recovery: "Lost stamps?", about: "About" },
 } as const;
 
 // 仕様4-6: スクリーンショットは server/src/db/spot-data.ts の確定したスポット情報で撮る。
@@ -129,9 +129,9 @@ async function captureAll(context: BrowserContext, language: Language): Promise<
   await page.getByRole("link", { name: label.map }).click();
   await expect(page.getByRole("heading", { name: language === "ja" ? "マップ" : "Map" })).toBeVisible();
   await capture(page, `${language}-map.png`);
-  await page.getByRole("link", { name: label.sponsors }).click();
-  await expect(page.getByRole("heading", { name: language === "ja" ? "協賛企業" : "Sponsors" })).toBeVisible();
-  await capture(page, `${language}-sponsors.png`);
+  await page.getByRole("link", { name: label.about }).click();
+  await expect(page.getByRole("heading", { name: language === "ja" ? "紹介" : "About" })).toBeVisible();
+  await capture(page, `${language}-about.png`);
   await page.close();
 
   page = await mockedPage(context, language, 2);
@@ -220,7 +220,7 @@ test("uses one QR from every empty slot and restores focus after closing", async
     await expect(page.locator("[data-qr-active]")).toHaveAttribute("inert", "");
     await expect(page.getByRole("button", { name: labels.ja.back })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("link", { name: labels.ja.sponsors })).toBeFocused();
+    await expect(page.getByRole("link", { name: labels.ja.about })).toBeFocused();
     await page.getByRole("button", { name: labels.ja.back }).click();
     await waitForBook(page);
     await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe(`card-slot-${spot.id}`);

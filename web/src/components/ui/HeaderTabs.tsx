@@ -1,7 +1,7 @@
-import { Handshake, Map, Stamp } from "lucide-react";
+import { Info, Map, Stamp } from "lucide-react";
 import styles from "./HeaderTabs.module.css";
 
-export type ParticipantTab = "book" | "map" | "sponsors";
+export type ParticipantTab = "book" | "map" | "about";
 
 type Props = {
   active: ParticipantTab;
@@ -12,7 +12,7 @@ type Props = {
 const tabs: Array<{ id: ParticipantTab; Icon: typeof Stamp }> = [
   { id: "book", Icon: Stamp },
   { id: "map", Icon: Map },
-  { id: "sponsors", Icon: Handshake },
+  { id: "about", Icon: Info },
 ];
 
 export function HeaderTabs({ active, labels, onSelect }: Props) {

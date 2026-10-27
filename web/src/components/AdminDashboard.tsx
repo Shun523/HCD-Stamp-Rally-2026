@@ -120,7 +120,7 @@ function Dashboard({ initialData, onSignOut, password }: {
         <button className={styles.textButton} type="button" onClick={() => onSignOut()}>ログアウト</button>
       </header>
       {(sampleDataActive || alertDevices.length > 0 || error) && <div className={styles.alertStack}>
-        {sampleDataActive && <Band className={styles.sampleWarning} role="alert">サンプルデータで稼働中です。スポット情報・画面文言・協賛企業を本番データへ差し替えてください。</Band>}
+        {sampleDataActive && <Band className={styles.sampleWarning} role="alert">サンプルデータで稼働中です。スポット情報・画面文言・紹介を本番データへ差し替えてください。</Band>}
         {alertDevices.length > 0 && <Band className={styles.alerts} role="alert">
           <strong>要対応のスタンプ機</strong>
           <ul>{alertDevices.map((device) => <li key={device.id}>

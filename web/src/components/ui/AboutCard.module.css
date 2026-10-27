@@ -1,5 +1,4 @@
 .card {
-  position: relative;
   display: grid;
   min-width: 0;
   gap: var(--space-2);
@@ -8,14 +7,13 @@
   background: var(--color-surface);
   border: var(--border);
   border-radius: var(--radius-card);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.4;
 }
 
-.logoFrame {
+.photoFrame {
   display: grid;
-  min-height: 64px;
   place-items: center;
   overflow: hidden;
   background: var(--color-surface);
@@ -23,8 +21,9 @@
   aspect-ratio: 3 / 2;
 }
 
-.logoFrame img { width: 100%; height: 100%; object-fit: contain; }
-.description { display: -webkit-box; overflow: hidden; color: var(--color-muted); font-size: 13px; font-weight: 700; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.photoFrame img { width: 100%; height: 100%; object-fit: cover; }
+.name { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.name svg { flex: none; }
+.description { color: var(--color-muted); font-size: 14px; font-weight: 700; }
 .link { box-shadow: var(--shadow-sm); text-decoration: none; transition: transform var(--duration-press), box-shadow var(--duration-press); }
 .link:active { box-shadow: none; transform: translate(3px, 3px); }
-.external { position: absolute; inset: var(--space-2) var(--space-2) auto auto; }
