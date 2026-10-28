@@ -22,9 +22,10 @@
   line-height: 1.1;
   text-align: center;
   text-decoration: none;
-  transition: transform var(--duration-press);
 }
 
 .tab + .tab { border-inline-start: var(--border); }
 .active { color: var(--color-surface); background: var(--color-coral-strong); }
-.tab:active { transform: translateY(3px); }
+/* デザイン3: タブの面はバーに固定し、中身だけを沈める。面ごと動かすと上端に背景色のすき間が出る */
+.tab > * { transition: transform var(--duration-press); }
+.tab:active > * { transform: translateY(3px); }
