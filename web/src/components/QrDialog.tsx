@@ -38,6 +38,20 @@ function useScreenWakeLock(enabled: boolean): void {
   }, [enabled]);
 }
 
+const guideAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+
+// デザイン4-2: 機体の液晶越しでもQRの方向が分かるよう、円の中心へ向かう矢印を描く。
+// 中心からの距離をpxで固定し、円が小さい画面でもQRの白い余白に入れない。
+function QrGuide() {
+  return (
+    <span aria-hidden="true" className={styles.guideClip}>
+      <svg className={styles.guide} data-qr-guide="true" viewBox="-160 -160 320 320">
+        {guideAngles.map((angle) => <path d="M130 0H86M102 -16L84 0L102 16" key={angle} transform={`rotate(${angle})`} />)}
+      </svg>
+    </span>
+  );
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
@@ -161,6 +175,7 @@ export function QrDialog({ copy, headerHeight, isClosing, onCloseRequest, onClos
       <div aria-hidden="true" className={styles.paper} data-qr-paper="true" />
       <div className={styles.stampCircle} data-qr-stamp-circle="true">
         <StampSlotDottedCircle />
+        <QrGuide />
         <div className={styles.qrCode} data-qr-code-container="true"><QRCodeSVG aria-label="Stamp QR code" includeMargin={false} level="M" size={75} value={token} /></div>
       </div>
       <IconButton className={styles.back} disabled={isClosing} label={copy.backToBook} ref={backRef} type="button" onClick={onCloseRequest}><ArrowLeft aria-hidden="true" size={26} strokeWidth={2.25} /></IconButton>

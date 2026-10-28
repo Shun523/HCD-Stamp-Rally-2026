@@ -359,13 +359,23 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     await page.setViewportSize(viewport);
     await page.locator("#card-slot-spot-05").click();
     await waitForQrOpen(page);
+    // 拡大の途中ではなく、拡大し終えた円で測る。
+    await expect.poll(() => page.locator("[data-qr-stamp-circle]").evaluate((element) => element.getAnimations().length)).toBe(0);
     const metrics = await page.evaluate(() => {
       const circle = document.querySelector<HTMLElement>("[data-qr-stamp-circle]")?.getBoundingClientRect();
       const qr = document.querySelector<SVGElement>('[aria-label="Stamp QR code"]')?.getBoundingClientRect();
       const back = document.querySelector<HTMLButtonElement>('[aria-label="スタンプ帳にもどる"]')?.getBoundingClientRect();
       const header = document.querySelector<HTMLElement>("[data-participant-header]")?.getBoundingClientRect();
+      const qrCode = document.querySelector<HTMLElement>("[data-qr-code-container]")?.getBoundingClientRect();
+      // 斜めの矢印は外接矩形が実際の線より広いため、線上の点で測る。点は線幅の半分だけ太らせて判定する。
+      const guides = [...document.querySelectorAll<SVGPathElement>("[data-qr-guide] path")].map((path) => {
+        const matrix = path.getScreenCTM() ?? undefined;
+        const length = path.getTotalLength();
+        const radius = Number.parseFloat(getComputedStyle(path).strokeWidth) / 2;
+        return Array.from({ length: 41 }, (_, index) => path.getPointAtLength((length * index) / 40).matrixTransform(matrix)).map(({ x, y }) => ({ radius, x, y }));
+      });
       window.scrollTo(100, 100);
-      return { back, circle, header, qr, scrollX: window.scrollX, scrollY: window.scrollY, scrollWidth: document.documentElement.scrollWidth, viewportHeight: window.innerHeight, viewportWidth: window.innerWidth };
+      return { back, circle, guides, header, qr, qrCode, scrollX: window.scrollX, scrollY: window.scrollY, scrollWidth: document.documentElement.scrollWidth, viewportHeight: window.innerHeight, viewportWidth: window.innerWidth };
     });
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.scrollX).toBe(0);
@@ -381,6 +391,10 @@ test("supports Escape and keeps the enlarged QR circle in view in every supporte
     expect(metrics.qr?.height).toBe(75);
     expect(metrics.back?.width).toBeGreaterThanOrEqual(48);
     expect(metrics.back?.height).toBeGreaterThanOrEqual(48);
+    // デザイン4-2: QRの方向を示す矢印は8本で、QRの白い余白に入らない。
+    const qrCode = metrics.qrCode;
+    expect(metrics.guides).toHaveLength(8);
+    expect(metrics.guides.flat().every(({ radius, x, y }) => qrCode !== undefined && (x + radius <= qrCode.left || x - radius >= qrCode.right || y + radius <= qrCode.top || y - radius >= qrCode.bottom))).toBe(true);
     await page.keyboard.press("Escape");
     await waitForBook(page);
     await page.close();

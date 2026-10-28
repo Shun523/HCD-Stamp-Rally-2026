@@ -51,6 +51,31 @@
   image-rendering: pixelated;
 }
 
+.guideClip {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: var(--radius-circle);
+  opacity: 0;
+  transition: opacity var(--duration-qr-reveal) ease-out;
+}
+
+.guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  fill: none;
+  stroke: var(--color-qr-guide);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 9;
+  transform: translate(-50%, -50%);
+}
+
 .back {
   position: absolute;
   z-index: 2;
@@ -68,11 +93,13 @@
   top: var(--qr-target-y);
 }
 
-.page[data-qr-phase="open"] .qrCode { opacity: 1; transition-delay: var(--duration-qr-reveal); }
+.page[data-qr-phase="open"] .qrCode,
+.page[data-qr-phase="open"] .guideClip { opacity: 1; transition-delay: var(--duration-qr-reveal); }
 .page[data-qr-phase="open"] .back { opacity: 1; }
 
 .page[data-qr-phase="closing"] .paper,
 .page[data-qr-phase="closing"] .qrCode,
+.page[data-qr-phase="closing"] .guideClip,
 .page[data-qr-phase="closing"] .back { opacity: 0; transition-delay: 0s; }
 
 .page[data-qr-phase="closing"] .stampCircle {
@@ -89,5 +116,6 @@
   .stampCircle,
   .paper,
   .qrCode,
+  .guideClip,
   .back { transition: none; }
 }
