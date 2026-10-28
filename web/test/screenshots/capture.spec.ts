@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 type Language = "ja" | "en";
 
@@ -87,6 +87,16 @@ async function waitForBook(page: Page): Promise<void> {
   await expect(page.locator("[data-qr-phase]")).toHaveCount(0);
 }
 
+async function emitStamp(page: Page, eventId: string): Promise<void> {
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { __stampSources?: MockSource[] }).__stampSources?.length ?? 0)).toBeGreaterThan(0);
+  await page.evaluate((id) => (window as typeof window & { __stampSources?: MockSource[] }).__stampSources?.[0]?.emit({ completed: false, event_id: id, spot_id: "spot-03", stamp_count: 3, stamped_at: "2026-10-31T04:25:05.000Z", total_spots: 5 }), eventId);
+}
+
+// デザイン4-4: 押印演出は約1.6秒で終わり、最後の状態のまま残る。
+async function waitForStampMotion(overlay: Locator): Promise<void> {
+  await expect.poll(() => overlay.evaluate((element) => element.getAnimations({ subtree: true }).every((animation) => animation.playState === "finished"))).toBe(true);
+}
+
 async function captureAll(context: BrowserContext, language: Language): Promise<void> {
   const label = labels[language];
   let page = await waitingPage(context, language);
@@ -138,6 +148,7 @@ async function captureAll(context: BrowserContext, language: Language): Promise<
   await expect.poll(() => page.evaluate(() => (window as typeof window & { __stampSources?: MockSource[] }).__stampSources?.length ?? 0)).toBeGreaterThan(0);
   await page.evaluate(() => (window as typeof window & { __stampSources?: MockSource[] }).__stampSources?.[0]?.emit({ completed: false, event_id: "event-for-screenshot", spot_id: "spot-03", stamp_count: 3, stamped_at: "2026-10-31T04:25:05.000Z", total_spots: 5 }));
   await expect(page.getByText(language === "ja" ? "スタンプGET!" : "STAMP GET!")).toBeVisible();
+  await waitForStampMotion(page.getByRole("dialog"));
   await capture(page, `${language}-stamp-animation.png`);
   await page.close();
 }
@@ -290,6 +301,55 @@ test("keeps QR operation available with reduced motion", async ({ context }) => 
   await expect(page.locator('[data-qr-phase="open"]')).toBeVisible();
   await page.getByRole("button", { name: labels.en.back }).click();
   await waitForBook(page);
+  await page.close();
+});
+
+// デザイン4-4: カードではなくスタンプ自体が落ちて着地し、円の線ときらきらが出る。全体は約1.6秒。
+test("drops the stamp itself and bursts sparkles around it in about 1.6 seconds", async ({ context }) => {
+  const page = await mockedPage(context, "ja", 2);
+  await emitStamp(page, "event-for-motion");
+  const overlay = page.getByRole("dialog", { name: "スタンプGET!" });
+  await expect(overlay).toBeVisible();
+  const motion = await overlay.evaluate((element) => {
+    const animations = element.getAnimations({ subtree: true });
+    const stamp = element.querySelector("img");
+    return {
+      end: Math.max(...animations.map((animation) => Number(animation.effect?.getComputedTiming().endTime ?? 0))),
+      stampDrops: animations.some((animation) => animation instanceof CSSAnimation && animation.animationName.includes("stamp-drop") && animation.effect instanceof KeyframeEffect && animation.effect.target?.contains(stamp) === true),
+    };
+  });
+  expect(motion.stampDrops).toBe(true);
+  expect(motion.end).toBeGreaterThan(1500);
+  expect(motion.end).toBeLessThan(1700);
+  const sparkles = overlay.locator("svg");
+  await expect(sparkles).toHaveCount(3);
+  await waitForStampMotion(overlay);
+  for (const sparkle of await sparkles.all()) await expect(sparkle.locator("..")).toHaveCSS("opacity", "1");
+  await expect(overlay.getByRole("heading", { name: "スタンプGET!" })).toHaveCSS("opacity", "1");
+  await page.close();
+});
+
+test("lets participants close the stamp overlay before the motion ends", async ({ context }) => {
+  const page = await mockedPage(context, "ja", 2);
+  await emitStamp(page, "event-for-early-close");
+  const overlay = page.getByRole("dialog", { name: "スタンプGET!" });
+  await expect(overlay).toBeVisible();
+  await overlay.getByRole("button", { name: labels.ja.close }).click();
+  await expect(overlay).toBeHidden();
+  await page.close();
+});
+
+// デザイン3・4-4: 動きを減らす設定では、最後の状態（きらきらあり）をすぐに出す。
+test("shows the finished stamp overlay at once with reduced motion", async ({ context }) => {
+  const page = await mockedPage(context, "en", 2);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await emitStamp(page, "event-for-reduced-motion");
+  const overlay = page.getByRole("dialog", { name: "STAMP GET!" });
+  await expect(overlay).toBeVisible();
+  expect(await overlay.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0);
+  await expect(overlay.getByRole("heading", { name: "STAMP GET!" })).toHaveCSS("opacity", "1");
+  await expect(overlay.locator("svg")).toHaveCount(3);
+  for (const sparkle of await overlay.locator("svg").all()) await expect(sparkle.locator("..")).toHaveCSS("opacity", "1");
   await page.close();
 });
 

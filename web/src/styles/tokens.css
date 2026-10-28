@@ -38,6 +38,7 @@
   --border-dashed-purple: 4px dashed var(--color-purple);
   --border-prize-cut: 3px dashed var(--color-ink);
   --border-heavy: 5px solid var(--color-ink);
+  --border-stamp-ring: 4px solid var(--color-coral-strong);
   --border-status-healthy: 6px solid var(--color-tree);
   --border-status-alert: 6px solid var(--color-coral-strong);
   --border-none: 0;
@@ -66,6 +67,7 @@
   --duration-press: 80ms;
   --duration-popup: 160ms;
   --duration-qr-reveal: 40ms;
-  --duration-stamp: 280ms;
-  --ease-stamp: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --duration-stamp-drop: 760ms;
+  --duration-stamp-burst: 840ms;
+  --ease-stamp-burst: cubic-bezier(0.2, 0.7, 0.3, 1);
 }

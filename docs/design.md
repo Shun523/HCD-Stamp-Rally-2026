@@ -1,4 +1,4 @@
-# デザインガイド（Webアプリ・v1.10正式版）
+# デザインガイド（Webアプリ・v1.11正式版）
 
 対象は web/ の参加者向け画面。スタッフ用ダッシュボードはトークンだけ共通にし、装飾は最小限にする。確定した設計差分は本書へ統合済みで、本書だけを設計の正本とする。
 
@@ -80,6 +80,7 @@ flowchart TD
   --shadow-lg: 8px 8px 0 var(--color-ink);
   --border-status-healthy: 6px solid var(--color-tree);
   --border-status-alert: 6px solid var(--color-coral-strong);
+  --border-stamp-ring: 4px solid var(--color-coral-strong); /* 押印演出の円の線 */
   --border-none: 0;
 
   /* 角丸 */
@@ -99,8 +100,9 @@ flowchart TD
   --duration-press: 80ms;
   --duration-popup: 160ms;
   --duration-qr-reveal: 40ms;
-  --duration-stamp: 280ms;
-  --ease-stamp: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --duration-stamp-drop: 760ms;   /* 押印演出でスタンプが落ちて着地するまで */
+  --duration-stamp-burst: 840ms;  /* 押印演出の円の線ときらきら */
+  --ease-stamp-burst: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 ```
 
@@ -235,10 +237,16 @@ flowchart TD
 
 SSEで押印を受けたら重ねて出す。**どのタブにいても出す**ため、押印の受信（SSEと10秒ポーリング）は各画面ではなくアプリの最上位で持つ。背景は bg を不透明で。
 
-- 中央の Card に StampImage を大きく（160px）。登場は `scale(1.4) → scale(1)` と傾きの付与を `--duration-stamp` / `--ease-stamp` で
+- 中央の Card に StampImage を大きく（160px）。止まったときの傾きは、台紙と同じスポットごとの傾き
+- 動きは、スタンプ自体が台紙へ落ちて着地し、円の線ときらきらが出るもの。全体で約1.6秒（v1.11で、カード全体の拡大から変更）
+  1. 0〜240ms: Card が不透明になる
+  2. 200〜960ms（`--duration-stamp-drop`）: StampImage が、透明・1.8倍・上へ28px・-10°の状態から加速しながら落ち、だんだん不透明になる。落下の55%（618ms）で0.92倍まで潰れて着地し、1.03倍を経て1倍に戻る
+  3. 着地（618ms）から: Card が影のぶん3px沈んで戻る（320ms）。円の線（`--border-stamp-ring`）が0.8倍から1.5倍へ広がりながら消える。Sparkle 3つ（yellow・coral・purple、60msずつずらす）がスタンプの中心からはじけて周りに止まり、そのまま残る。どちらも `--duration-stamp-burst`
+  4. 縁取り見出し「スタンプGET!」（680ms）、スポット名（780ms）、ProgressBadge（880ms）の順に、下から8px上がりながら400msで出る
 - 縁取り見出し「スタンプGET!」、スポット名、ProgressBadge
-- Button（primary）「とじる」
+- Button（primary）「とじる」。動きの途中でも押せる
 - 5個目のときも「とじる」だけを置く。閉じるとスタンプ帳の景品引換券がCOMPLETE表示になっている
+- `prefers-reduced-motion: reduce` のときは動かさず、最後の状態（きらきらあり、円の線なし）をすぐに出す
 
 ### 4-5. （廃止）ゴールページ
 

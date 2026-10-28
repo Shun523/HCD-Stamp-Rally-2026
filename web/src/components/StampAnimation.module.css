@@ -1,4 +1,25 @@
-.overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: var(--space-5); background: var(--color-bg); }
-.card { display: grid; width: min(100%, 400px); justify-items: center; gap: var(--space-4); padding: var(--space-6); text-align: center; animation: stamp-pop var(--duration-stamp) var(--ease-stamp); }.card > img, .card > span:first-child { width: 160px; height: 160px; }.card h2, .card p { margin: 0; }.card p { font-size: 20px; font-weight: 900; }
+/* デザイン4-4: 押印演出の時間配分。全体は約1.6秒。着地は落下の55%の時点（200ms + 760ms × 0.55） */
+.overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: var(--space-5); background: var(--color-bg); --stamp-drop-start: 200ms; --stamp-impact: 618ms; }
+.card { display: grid; width: min(100%, 400px); justify-items: center; gap: var(--space-4); padding: var(--space-6); text-align: center; animation: stamp-card-in 240ms ease-out both, stamp-card-thud 320ms ease-out var(--stamp-impact) both; }.card h2, .card p { margin: 0; }.card p { font-size: 20px; font-weight: 900; }
 .outlined { color: var(--color-coral); font-family: var(--font-display); font-size: 34px; line-height: 1.15; text-shadow: 3px 0 0 var(--color-ink), -3px 0 0 var(--color-ink), 0 3px 0 var(--color-ink), 0 -3px 0 var(--color-ink), 2px 2px 0 var(--color-ink), -2px 2px 0 var(--color-ink), 2px -2px 0 var(--color-ink), -2px -2px 0 var(--color-ink), 0 5px 0 var(--color-ink); }
-@keyframes stamp-pop { from { transform: scale(1.4) rotate(-8deg); } to { transform: scale(1) rotate(0); } }
+.stampArea { position: relative; width: 160px; height: 160px; }
+.ring { position: absolute; inset: 6px; border: var(--border-stamp-ring); border-radius: var(--radius-circle); opacity: 0; animation: stamp-ring var(--duration-stamp-burst) var(--ease-stamp-burst) var(--stamp-impact) both; }
+.stampMotion { position: absolute; inset: 0; display: grid; place-items: center; animation: stamp-drop var(--duration-stamp-drop) linear var(--stamp-drop-start) both; }.stampMotion > img, .stampMotion > span { width: 100%; height: 100%; }
+.burst { position: absolute; animation: stamp-burst var(--duration-stamp-burst) ease-out var(--burst-at) both; }.burst > svg { width: 100%; height: 100%; }
+.burst1 { top: 4px; left: -24px; width: 30px; height: 30px; --burst-from-x: 89px; --burst-from-y: 61px; --burst-at: 618ms; }
+.burst2 { top: -10px; left: 154px; width: 24px; height: 24px; --burst-from-x: -86px; --burst-from-y: 78px; --burst-at: 678ms; }
+.burst3 { top: 124px; left: 146px; width: 26px; height: 26px; --burst-from-x: -79px; --burst-from-y: -57px; --burst-at: 738ms; }
+.title, .spotName, .badgeRow { animation: stamp-reveal 400ms ease-out var(--reveal-delay) both; }.title { --reveal-delay: 680ms; }.spotName { --reveal-delay: 780ms; }.badgeRow { display: grid; justify-items: center; --reveal-delay: 880ms; }
+@keyframes stamp-card-in { from { opacity: 0; } }
+@keyframes stamp-card-thud { 30% { transform: translate(3px, 3px); box-shadow: var(--shadow-md); } }
+@keyframes stamp-drop {
+  0% { opacity: 0; transform: translateY(-28px) scale(1.8) rotate(-10deg); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  55% { opacity: 0.8; transform: translateY(0) scale(0.92) rotate(0deg); animation-timing-function: ease-out; }
+  78% { opacity: 1; transform: translateY(0) scale(1.03) rotate(0deg); animation-timing-function: ease-in-out; }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+@keyframes stamp-ring { from { opacity: 0.9; transform: scale(0.8); } to { opacity: 0; transform: scale(1.5); } }
+@keyframes stamp-burst { 0% { opacity: 0; transform: translate(var(--burst-from-x), var(--burst-from-y)) scale(0) rotate(-60deg); } 65% { opacity: 1; transform: translate(0, 0) scale(1.2) rotate(0deg); } }
+@keyframes stamp-reveal { from { opacity: 0; transform: translateY(8px); } }
+/* デザイン3: 動きを減らす設定では、最後の状態（きらきらあり、円の線なし）をすぐに出す */
+@media (prefers-reduced-motion: reduce) { .card, .ring, .stampMotion, .burst, .title, .spotName, .badgeRow { animation: none; } }
