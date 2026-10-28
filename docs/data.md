@@ -62,7 +62,8 @@
 | 混雑した時間帯、参加・押印・完走のピーク | `sessions.created_at`、`stamps.stamped_at` | `by-time.csv`（30分ごと） |
 | 完走までにかかった時間 | 参加者ごとの最初と最後の押印 | `summary.md`（中央値・最短・最長） |
 | スポット間の移動時間 | 参加者ごとの連続する押印の時刻差 | `raw/stamps.csv` から自分で集計 |
-| 機体ごとの押印数、予備機が使われたか | `stamps.device_id` | `by-device.csv` |
+| 機体ごとの押印数 | `stamps.device_id` | `by-device.csv` |
+| 予備機を使った時間帯 | 差し替えの記録（spare-device.md 3章）。予備機は故障機の機体IDで動くので、`device_id` では区別できない。ハートビートのログでは再起動として表れる | `devices.csv` の `restarts` |
 | 参加者の端末とブラウザ、LINEなどアプリ内ブラウザの割合 | `sessions.user_agent` | `browsers.csv` |
 | 押印が画面にすぐ届いたか（ACK到達率） | `deliveries` | `summary.md` |
 | サーバーの処理時間 | Cloud Loggingの押印ログ | `ack-latency.csv` |
