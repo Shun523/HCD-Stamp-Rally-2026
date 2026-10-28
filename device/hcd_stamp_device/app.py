@@ -10,15 +10,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from PIL import Image
-
-from .display import StatusRenderer, load_stamp_images
+from .display import ResultOverlay, StatusRenderer, load_stamp_images
 from .heartbeat import HeartbeatReporter
 from .http_client import DeviceApi
 from .interfaces import Camera, Display, QrDecoder
-from .models import SendOutcome, SendResult
+from .models import SendResult
 from .queue import PersistentStampQueue
 from .sender import SenderWorker
+from .stamp_motion import StampMotion
 from .vision import QR_SCAN_INTERVAL, OpenCvQrDecoder, center_square, frame_to_lcd_image
 from .watchdog import STALL_TIMEOUT_SECONDS, LoopWatchdog
 
@@ -50,7 +49,6 @@ class StampDeviceApp:
         self._display = display
         self._decoder = decoder
         self._queue = queue
-        self._spot_id = spot_id
         self._monotonic = monotonic
         self._wall_clock = wall_clock
         self._sleeper = sleeper
@@ -72,13 +70,19 @@ class StampDeviceApp:
             monotonic=monotonic,
             logger=self._logger,
         )
-        self._stamps = load_stamp_images(stamp_directory)
-        self._status = StatusRenderer()
+        stamp = load_stamp_images(stamp_directory)[spot_id]
+        # 仕様6-2: 押印時に描画を待たないよう、自機のスポットの演出を起動時に全コマ作っておく。
+        rendering_started = monotonic()
+        motion = StampMotion(stamp)
+        self._logger.info(
+            "押印演出のコマを%d枚作りました（%.2f秒）",
+            motion.frame_count,
+            monotonic() - rendering_started,
+        )
+        self._overlay = ResultOverlay(StatusRenderer(), stamp, motion)
         self._frame_number = 0
         self._last_qr_text: str | None = None
         self._last_qr_at = float("-inf")
-        self._overlay: Image.Image | None = None
-        self._overlay_until = float("-inf")
         self._running = True
         self._stall_timeout = stall_timeout
         self._watchdog = LoopWatchdog(
@@ -100,13 +104,7 @@ class StampDeviceApp:
     def _set_result_overlay(self, result: SendResult) -> None:
         if result.stamp_count is not None:
             self._last_stamp_count = result.stamp_count
-        if result.outcome is SendOutcome.STAMPED:
-            self._overlay = self._status.stamp_image(self._stamps[self._spot_id], already=False)
-        elif result.outcome is SendOutcome.ALREADY:
-            self._overlay = self._status.stamp_image(self._stamps[self._spot_id], already=True)
-        else:
-            self._overlay = self._status.status_image(result.outcome)
-        self._overlay_until = self._monotonic() + self._status.duration_for(result.outcome)
+        self._overlay.start(result.outcome, self._monotonic())
 
     def _process_completed_sends(self) -> None:
         for result in self._sender.poll():
@@ -132,11 +130,8 @@ class StampDeviceApp:
                 self._last_qr_at = now
                 self._logger.info("QRを読み取り、送信ワーカーへ渡しました: %s", text)
 
-        if self._overlay is not None and now < self._overlay_until:
-            self._display.show(self._overlay)
-        else:
-            self._overlay = None
-            self._display.show(frame_to_lcd_image(square))
+        overlay = self._overlay.image_at(now)
+        self._display.show(overlay if overlay is not None else frame_to_lcd_image(square))
 
     def run(self) -> None:
         """Ctrl+Cまで実行し、安全な終了順を必ず守る（仕様6-8）。"""
