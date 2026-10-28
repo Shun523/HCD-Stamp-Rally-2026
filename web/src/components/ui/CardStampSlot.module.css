@@ -95,12 +95,12 @@
 .empty { cursor: pointer; }
 .empty:active .circle { background: var(--color-pink); }
 
+/* デザイン4-1: 円より一回り大きく、中心をそろえる。グリッドの行に入れると高さの基準がずれて下へずれる */
 .stampGraphic {
-  position: relative;
+  position: absolute;
   z-index: 2;
+  inset: -6%;
   display: grid;
-  width: 112%;
-  height: 112%;
   place-items: center;
 }
 
