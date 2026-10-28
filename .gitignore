@@ -6,3 +6,5 @@ dist/
 coverage/
 test-results/
 playwright-report/
+# イベント後の書き出し（参加者の生データを含むためコミットしない）
+exports/

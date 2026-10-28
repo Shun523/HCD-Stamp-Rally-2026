@@ -9,6 +9,7 @@
 ```sh
 pnpm --filter @hcd-stamp-rally/server db:migrate
 pnpm --filter @hcd-stamp-rally/server db:seed
+pnpm --filter @hcd-stamp-rally/server db:export --out ../exports/2026-10-31
 pnpm --filter @hcd-stamp-rally/server test
 pnpm --filter @hcd-stamp-rally/server lint
 pnpm --filter @hcd-stamp-rally/server typecheck
@@ -20,6 +21,8 @@ pnpm --filter @hcd-stamp-rally/server typecheck
 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
   pnpm --filter @hcd-stamp-rally/server exec vitest run test/integration.test.ts
 ```
+
+`db:export` はイベント後にDBを読み、参加者・押印・通知の生データのCSVと集計を `--out` へ書き出します（DBは変更しません）。`--logs` にCloud Loggingの書き出しを渡すと処理時間も集計します。手順と出力の意味は [docs/data.md](../docs/data.md) にあります。書き出しの結合テストも `TEST_DATABASE_URL` を付けて `vitest run test/export.integration.test.ts` で実行できます。
 
 `DATABASE_URL` はSupabaseのSession modeプーラー接続文字列を環境変数で渡します。機体キーは `DEVICE_KEYS_JSON` に指定し、キーそのものはコミットしません。管理APIは `X-Admin-Password`、機体APIは `Authorization: Bearer <device-key>` で認証します。
 

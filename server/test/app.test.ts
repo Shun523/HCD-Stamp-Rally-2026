@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { DEFAULT_SECURITY_LIMITS } from "../src/config.js";
+import { createStructuredLogger } from "../src/logger.js";
 import type {
   HeartbeatState,
   NewSession,
@@ -245,6 +246,36 @@ describe("server API", () => {
     expect((await stamped.json() as { result: string }).result).toBe("stamped");
     expect((await already.json() as { result: string }).result).toBe("already");
     expect(repository.stamps).toHaveLength(1);
+  });
+
+  it("logs heartbeats and duplicate stamps so device history survives the event", async () => {
+    const repository = new MemoryRepository();
+    const lines: string[] = [];
+    const app = createApp({
+      repository,
+      now: () => new Date("2026-10-31T12:00:00+09:00"),
+      config: { adminPassword: "staff-password", ackTimeoutMs: 10 },
+      logger: createStructuredLogger((line) => lines.push(line)),
+    });
+    const cookie = sessionCookie(await app.request("/", { redirect: "manual" }));
+    const sessionId = cookie.split("=", 2)[1]!;
+    const token = (await (await app.request("/api/me", { headers: { cookie } })).json() as { token: string }).token;
+    const headers = { authorization: "Bearer device-key", "content-type": "application/json" };
+    const body = JSON.stringify({ token, device_id: "dev-01" });
+    await app.request("/api/stamp", { method: "POST", headers, body });
+    await app.request("/api/stamp", { method: "POST", headers, body });
+    await app.request("/api/heartbeat", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ device_id: "dev-01", uptime_seconds: 3600, last_stamp_count: 1, pending_queue_count: 2, battery_level: 64 }),
+    });
+
+    const logs = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    // 仕様5-3: 既押印はDBに残らないのでログに残す。セッションIDは出さない。
+    expect(logs).toContainEqual({ severity: "INFO", message: "stamp already collected", deviceId: "dev-01", spotId: "spot-01", stamp_count: 1 });
+    // 仕様5-6: ハートビートの内容をそのまま残す。
+    expect(logs).toContainEqual({ severity: "INFO", message: "device heartbeat", deviceId: "dev-01", uptime_seconds: 3600, last_stamp_count: 1, pending_queue_count: 2, battery_level: 64 });
+    expect(lines.join("\n")).not.toContain(sessionId);
   });
 
   it("accepts a pre-16:00 offline stamp during October 31 and rejects it on November 1", async () => {

@@ -314,6 +314,8 @@ export function createApp(dependencies: AppDependencies) {
     if (!result) return c.json(jsonError("invalid_token"), 404);
 
     if (result.result === "already" || !result.eventId) {
+      // 仕様5-3: 既押印はDBに残らないため、機体とスポットだけをログへ出す。セッションIDはCookieの値なので出さない。
+      logger.info("stamp already collected", { deviceId: raw.device_id, spotId: result.spotId, stamp_count: result.stampCount });
       return c.json({
         result: "already",
         spot_id: result.spotId,
@@ -386,6 +388,14 @@ export function createApp(dependencies: AppDependencies) {
       lastStampCount: raw.last_stamp_count,
       pendingQueueCount: raw.pending_queue_count,
       batteryLevel: raw.battery_level ?? null,
+    });
+    // 仕様5-6: DBには最新の受信時刻しか残らないため、受信した内容をログへ出して推移を残す。
+    logger.info("device heartbeat", {
+      deviceId: raw.device_id,
+      uptime_seconds: raw.uptime_seconds,
+      last_stamp_count: raw.last_stamp_count,
+      pending_queue_count: raw.pending_queue_count,
+      battery_level: raw.battery_level ?? null,
     });
     return c.json({ ok: true });
   });

@@ -1,13 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { eq } from "drizzle-orm";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 import { createDb } from "../src/db/client.js";
 import { PostgresRepository } from "../src/db/repository.js";
 import { devices, spots } from "../src/db/schema.js";
 import { hashSecret } from "../src/security.js";
+import { migrateTestDatabase } from "./support/migrate-test-database.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const integration = databaseUrl ? describe : describe.skip;
@@ -24,7 +23,7 @@ integration("PostgreSQL persistence", () => {
     const spotId = `integration-spot-${suffix}`;
     try {
       // 仕様8章: 本番と同じdrizzleのマイグレータを使い、適用済みのDBでも再実行できるようにする。
-      await migrate(db, { migrationsFolder: fileURLToPath(new URL("../drizzle", import.meta.url)) });
+      await migrateTestDatabase(sql, db);
       await db.insert(spots).values({
         id: spotId,
         nameJa: "統合テスト",
