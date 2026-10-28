@@ -195,7 +195,7 @@ gcloud run services update "$SERVICE" \
 - `--min-instances=1` と `--no-cpu-throttling` は、コールドスタートを避け、リクエスト外の
   ハートビート監視を止めないために必要です。
 - `--max-instances=1` はSSE通知とACK待機が別インスタンスへ分かれないようにします。
-- この期間はデプロイしません。新旧インスタンスが並走するとメモリ上のSSE状態が分かれます。
+- この期間はデプロイしません。新旧インスタンスが並走するとメモリ上のSSE状態が分かれます。10月30日に限り、3-1の条件で例外を認めます。
 
 イベント終了後と、リハーサル日・イベント前日〜当日以外は、費用を抑えるため必ず戻します。
 
@@ -210,6 +210,53 @@ gcloud run services update "$SERVICE" \
 Cloud Runの最小インスタンスはサービスレベルで設定でき、同時実行数の上限は1000です。
 設定の意味は[最小インスタンスの公式ガイド](https://cloud.google.com/run/docs/configuring/min-instances)と
 [Cloud Runの設定リファレンス](https://cloud.google.com/run/docs/configuring)で確認できます。
+
+### 3-1. 10月30日にどうしても直す場合（例外）
+
+10月30日は一般開放前で、参加者はいません（待機画面だけで、セッションも発行しない。spec 4-8）。新旧インスタンスの並走で通知が届かなくなるのは、古いインスタンスにつながったままのスマホだけなので、試験中のスマホを開き直せば解消します。そのため、次の条件をすべて満たすときに限り、10月30日中のデプロイを認めます。**10月31日は理由を問わずデプロイしません。**
+
+- リハーサル・前日確認で見つかった、当日の運用に支障が出る不具合である（押印できない、スタンプ帳や管理画面が動かない、など）。見た目の小さな崩れや文言の修正は対象にしない
+- 修正後のテスト・lint・型チェック・`pnpm test:e2e` が通っている
+- その日のうちに、5章の前日確認を最初からやり直せる
+
+手順:
+
+1. 試験用のスマホと機体での押印を止める。
+2. 修正をコミットし、新しいコミットでイメージ名を設定し直してから、2-3章の手順でMapsキー入りのイメージを作る。
+
+   ```sh
+   export SOURCE_REVISION="$(git rev-parse --short HEAD)"
+   export IMAGE="$IMAGE_BASE:$SOURCE_REVISION"
+   ```
+
+3. 戻すときのために、今のリビジョン名を控える。
+
+   ```sh
+   export PREVIOUS_REVISION="$(gcloud run services describe "$SERVICE" \
+     --region="$REGION" \
+     --format='value(status.latestReadyRevisionName)')"
+   echo "$PREVIOUS_REVISION"
+   ```
+
+4. デプロイする。3章の試験期間用の設定（min 1、max 1、CPU常時、timeout 3600）は引き継がれる。
+
+   ```sh
+   gcloud run deploy "$SERVICE" \
+     --image="$IMAGE" \
+     --region="$REGION"
+   ```
+
+5. `gcloud run services describe` で試験期間用の設定のままであることを確かめる。
+6. 試験用のスマホはページを開き直す（新しいインスタンスにつなぎ直すため）。機体は押印のたびに新しく接続するので、操作は要らない。
+7. 5章の前日確認を最初からやり直す。
+
+新しい版で問題が出たら、控えたリビジョンへ全トラフィックを戻します。戻したあとも、試験用のスマホは開き直します。
+
+```sh
+gcloud run services update-traffic "$SERVICE" \
+  --region="$REGION" \
+  --to-revisions="$PREVIOUS_REVISION=100"
+```
 
 ## 4. Supabase停止防止用 Cloud Scheduler
 
@@ -268,5 +315,6 @@ gcloud scheduler jobs describe hcd-supabase-health --location="$REGION"
 ## 7. イベント終了後
 
 1. Cloud Runを通常設定（min 0、CPUリクエスト時のみ）へ戻す。
-2. 必要な集計・CSVを書き出しを行う。データ保存の目安は2026年11月30日までとする。
-3. 当日中に未送信キューが残った端末を確認し、必要ならネットワーク回復後に再送してから電源を落とす。
+2. 当日中に未送信キューが残った端末を確認し、必要ならネットワーク回復後に再送する。機体ごとのログを保存してから（[data.md](data.md) 4-1）、`sudo poweroff` で電源を落とす。
+3. 11月中旬までに、Cloud Loggingのログ、DBのデータ、Cloud Runのグラフを書き出す（[data.md](data.md) 4章）。Cloud Loggingのログは30日で消える。
+4. 書き出しを確認したら、Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除する。2026年11月30日までにSupabaseのプロジェクトと生データを削除する（[data.md](data.md) 5〜6章）。
