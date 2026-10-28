@@ -16,8 +16,6 @@ export function PrizeStub({ complete, copy, remaining }: Props) {
   return (
     <section className={[styles.stub, complete ? styles.complete : ""].filter(Boolean).join(" ")}>
       <div aria-hidden="true" className={styles.cutLine}><span className={styles.scissors}><Scissors size={20} strokeWidth={2.25} /></span></div>
-      <i aria-hidden="true" className={[styles.notch, styles.leftNotch].join(" ")} />
-      <i aria-hidden="true" className={[styles.notch, styles.rightNotch].join(" ")} />
       <div className={styles.content}>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>{complete ? copy.prizeStubComplete : copy.prizeStubTitle}</p>

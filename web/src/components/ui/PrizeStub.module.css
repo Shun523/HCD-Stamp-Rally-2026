@@ -22,22 +22,6 @@
   background: var(--color-paper);
 }
 
-.notch {
-  position: absolute;
-  z-index: 2;
-  top: -12px;
-  display: block;
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
-  background: var(--color-bg);
-  border: var(--border);
-  border-radius: var(--radius-circle);
-}
-
-.leftNotch { left: -12px; clip-path: inset(0 0 0 50%); }
-.rightNotch { right: -12px; clip-path: inset(0 50% 0 0); }
-
 .content {
   display: grid;
   min-height: 96px;
