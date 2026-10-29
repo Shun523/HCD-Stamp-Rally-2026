@@ -68,7 +68,7 @@ export interface Repository {
   updateHeartbeat(state: HeartbeatState): Promise<void>;
   listDevices(): Promise<typeof devices.$inferSelect[]>;
   getAckTimeoutsByDevice(since: Date): Promise<AckTimeoutSummary[]>;
-  getStats(): Promise<{
+  getStats(openAt: Date): Promise<{
     participantCount: number;
     stampCountBySpot: Array<{ spotId: string; count: number }>;
     completedCount: number;
@@ -268,21 +268,25 @@ export class PostgresRepository implements Repository {
     }] : []);
   }
 
-  public async getStats() {
-    const participants = await this.db.select({ count: count() }).from(sessions);
+  // 仕様7章・4-8: 一般開放前に発行したセッションは試験用なので、そのセッションの押印も含めて数えない。
+  public async getStats(openAt: Date) {
+    const participants = await this.db.select({ count: count() }).from(sessions).where(gte(sessions.createdAt, openAt));
     const bySpot = await this.db
-      .select({ spotId: spots.id, count: count(stamps.id) })
+      .select({ spotId: spots.id, count: count(sessions.id) })
       .from(spots)
       .leftJoin(stamps, eq(stamps.spotId, spots.id))
+      .leftJoin(sessions, and(eq(sessions.id, stamps.sessionId), gte(sessions.createdAt, openAt)))
       .groupBy(spots.id)
       .orderBy(asc(spots.displayOrder));
     const completed = await this.db.execute<{ count: string }>(sql`
       select count(*)::text as count
       from (
-        select session_id
+        select stamps.session_id
         from stamps
-        group by session_id
-        having count(distinct spot_id) = (select count(*) from spots)
+        join sessions on sessions.id = stamps.session_id
+        where sessions.created_at >= ${openAt.toISOString()}::timestamptz
+        group by stamps.session_id
+        having count(distinct stamps.spot_id) = (select count(*) from spots)
       ) completed_sessions
     `);
     return {

@@ -182,15 +182,17 @@ class MemoryRepository implements Repository {
     });
   }
 
-  public async getStats() {
+  public async getStats(openAt: Date) {
+    const participants = [...this.sessions.values()].filter((session) => session.createdAt >= openAt).map((session) => session.id);
+    const eventStamps = this.stamps.filter((stamp) => participants.includes(stamp.sessionId));
     return {
-      participantCount: this.sessions.size,
+      participantCount: participants.length,
       stampCountBySpot: spots.map((spot) => ({
         spotId: spot.id,
-        count: this.stamps.filter((stamp) => stamp.spotId === spot.id).length,
+        count: eventStamps.filter((stamp) => stamp.spotId === spot.id).length,
       })),
-      completedCount: [...this.sessions.keys()].filter((id) =>
-        new Set(this.stamps.filter((stamp) => stamp.sessionId === id).map((stamp) => stamp.spotId)).size === spots.length,
+      completedCount: participants.filter((id) =>
+        new Set(eventStamps.filter((stamp) => stamp.sessionId === id).map((stamp) => stamp.spotId)).size === spots.length,
       ).length,
     };
   }
@@ -585,6 +587,34 @@ describe("participant opening (仕様4-8・7章)", () => {
     expect(await statusOpen(createTestApp(repository, beforeOpening), preview)).toBe(true);
     const changed = createApp({ repository, now: beforeOpening, config: { adminPassword: "new-staff-password", ackTimeoutMs: 10 } });
     expect(await statusOpen(changed, preview)).toBe(false);
+  });
+
+  it("leaves sessions issued before opening and their stamps out of the dashboard stats", async () => {
+    const repository = new MemoryRepository();
+    let current = beforeOpening();
+    const app = createTestApp(repository, () => current);
+    const deviceHeaders = { authorization: "Bearer device-key", "content-type": "application/json" };
+    const stampWith = async (cookie: string) => {
+      const token = (await (await app.request("/api/me", { headers: { cookie } })).json() as { token: string }).token;
+      return app.request("/api/stamp", { method: "POST", headers: deviceHeaders, body: JSON.stringify({ token, device_id: "dev-01" }) });
+    };
+    const unlock = await app.request("/api/admin/preview", { method: "POST", headers: unlockHeaders });
+    const preview = unlock.headers.get("set-cookie")!.split(";", 1)[0]!;
+    const staffCookie = sessionCookie(await app.request("/", { redirect: "manual", headers: { cookie: preview } }));
+    current = new Date("2026-10-31T11:00:00+09:00");
+    // 開放前に作った試験用のセッションは、開放後に押しても数えない。
+    expect((await stampWith(staffCookie)).status).toBe(200);
+    const participantCookie = sessionCookie(await app.request("/", { redirect: "manual" }));
+    expect((await stampWith(participantCookie)).status).toBe(200);
+    const stats = await (await app.request("/api/admin/stats", { headers: unlockHeaders })).json() as {
+      participant_count: number;
+      completed_count: number;
+      stamp_count_by_spot: Array<{ spot_id: string; count: number }>;
+    };
+    expect(repository.sessions.size).toBe(2);
+    expect(stats.participant_count).toBe(1);
+    expect(stats.stamp_count_by_spot.find((row) => row.spot_id === "spot-01")?.count).toBe(1);
+    expect(stats.completed_count).toBe(0);
   });
 
   it("accepts stamps and heartbeats from stations before opening", async () => {

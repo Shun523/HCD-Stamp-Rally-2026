@@ -432,7 +432,7 @@ export function createApp(dependencies: AppDependencies) {
     const rejection = requireAdmin(c);
     if (rejection) return rejection;
     const [stats, spots] = await Promise.all([
-      dependencies.repository.getStats(),
+      dependencies.repository.getStats(config.participantOpenAt),
       dependencies.repository.getSpots(),
     ]);
     return c.json({

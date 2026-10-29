@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, TransactionRollbackError } from "drizzle-orm";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
-import { createDb } from "../src/db/client.js";
+import { createDb, type AppDb } from "../src/db/client.js";
 import { PostgresRepository } from "../src/db/repository.js";
-import { devices, spots } from "../src/db/schema.js";
+import { devices, sessions, spots, stamps } from "../src/db/schema.js";
 import { hashSecret } from "../src/security.js";
 import { migrateTestDatabase } from "./support/migrate-test-database.js";
 
@@ -82,6 +82,67 @@ integration("PostgreSQL persistence", () => {
       await sql.unsafe(`delete from devices where id = '${deviceId}'`);
       await sql.unsafe(`delete from spots where id = '${spotId}'`);
       await recreatedDb.client.end();
+      await client.end();
+      await sql.end();
+    }
+  });
+
+  // 仕様7章・4-8: 開放前に発行したセッションは試験用なので、その押印も含めて参加状況に数えない。
+  it("leaves sessions issued before opening out of the dashboard stats", async () => {
+    const sql = postgres(databaseUrl!, { prepare: false });
+    const { db, client } = createDb(databaseUrl!);
+    const suffix = randomUUID().slice(0, 8);
+    const openAt = new Date("2099-01-01T00:00:00.000Z");
+    const testSession = `stats-test-${suffix}`;
+    const completeSession = `stats-complete-${suffix}`;
+    const partialSession = `stats-partial-${suffix}`;
+    const firstSpot = `stats-spot-1-${suffix}`;
+    const secondSpot = `stats-spot-2-${suffix}`;
+    try {
+      await migrateTestDatabase(sql, db);
+      // 並行する結合テストが足すスポットで完走の判定が揺れないよう、1つのスナップショットで数え、最後に取り消す。
+      await db.transaction(async (tx) => {
+        await tx.insert(spots).values([firstSpot, secondSpot].map((id, index) => ({
+          id,
+          nameJa: "集計テスト",
+          nameEn: "Stats test",
+          displayOrder: 100 + index,
+          lat: 34.66,
+          lng: 133.91,
+          descriptionJa: "",
+          descriptionEn: "",
+          locationNoteJa: null,
+          locationNoteEn: null,
+        })));
+        await tx.insert(sessions).values([
+          { id: testSession, createdAt: new Date("2098-12-31T23:59:59.000Z"), userAgent: "integration-test" },
+          { id: completeSession, createdAt: openAt, userAgent: "integration-test" },
+          { id: partialSession, createdAt: new Date("2099-01-01T01:00:00.000Z"), userAgent: "integration-test" },
+        ]);
+        const allSpots = await tx.select({ id: spots.id }).from(spots);
+        const stampRow = (sessionId: string, spotId: string, visitOrder: number) => ({
+          sessionId,
+          spotId,
+          visitOrder,
+          stampedAt: new Date("2099-01-01T02:00:00.000Z"),
+          deviceStampedAt: null,
+          deviceId: `stats-device-${suffix}`,
+        });
+        await tx.insert(stamps).values([
+          ...allSpots.map((spot, index) => stampRow(testSession, spot.id, index + 1)),
+          ...allSpots.map((spot, index) => stampRow(completeSession, spot.id, index + 1)),
+          stampRow(partialSession, firstSpot, 1),
+        ]);
+        const stats = await new PostgresRepository(tx as unknown as AppDb).getStats(openAt);
+        expect(stats.participantCount).toBe(2);
+        expect(stats.completedCount).toBe(1);
+        expect(stats.stampCountBySpot.find((row) => row.spotId === firstSpot)?.count).toBe(2);
+        expect(stats.stampCountBySpot.find((row) => row.spotId === secondSpot)?.count).toBe(1);
+        tx.rollback();
+      }, { isolationLevel: "repeatable read" }).catch((error: unknown) => {
+        if (!(error instanceof TransactionRollbackError)) throw error;
+      });
+    } finally {
       await client.end();
       await sql.end();
     }

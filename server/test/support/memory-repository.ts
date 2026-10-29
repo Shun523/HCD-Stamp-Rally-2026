@@ -188,15 +188,17 @@ export class MemoryRepository implements Repository {
     });
   }
 
-  public async getStats() {
+  public async getStats(openAt: Date) {
+    const participants = [...this.sessions.values()].filter((session) => session.createdAt >= openAt).map((session) => session.id);
+    const eventStamps = this.stamps.filter((stamp) => participants.includes(stamp.sessionId));
     return {
-      participantCount: this.sessions.size,
+      participantCount: participants.length,
       stampCountBySpot: memorySpots.map((spot) => ({
         spotId: spot.id,
-        count: this.stamps.filter((stamp) => stamp.spotId === spot.id).length,
+        count: eventStamps.filter((stamp) => stamp.spotId === spot.id).length,
       })),
-      completedCount: [...this.sessions.keys()].filter((id) =>
-        new Set(this.stamps.filter((stamp) => stamp.sessionId === id).map((stamp) => stamp.spotId)).size === memorySpots.length,
+      completedCount: participants.filter((id) =>
+        new Set(eventStamps.filter((stamp) => stamp.sessionId === id).map((stamp) => stamp.spotId)).size === memorySpots.length,
       ).length,
     };
   }
