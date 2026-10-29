@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib.util import find_spec
 from typing import Any
 
 from PIL import Image
@@ -108,13 +109,12 @@ class PiDisplay:
 
 
 def create_hardware(backend: str) -> tuple[Camera, Display]:
-    """autoではPi用依存がない開発PCにダミーを選ぶ。"""
+    """autoではPi用依存がない開発PCにだけダミーを選ぶ。
 
-    if backend == "dummy":
+    Picamera2がある実機でカメラを開けない（ケーブル外れなど）ときはダミーにせず異常終了させる。
+    ダミーで動き続けるとハートビートが送られ、ダッシュボードで正常に見えるため（仕様5-6、6-8）。
+    """
+
+    if backend == "dummy" or (backend == "auto" and find_spec("picamera2") is None):
         return DummyCamera(), DummyDisplay()
-    try:
-        return PiCamera(), PiDisplay()
-    except Exception:
-        if backend == "pi":
-            raise
-        return DummyCamera(), DummyDisplay()
+    return PiCamera(), PiDisplay()

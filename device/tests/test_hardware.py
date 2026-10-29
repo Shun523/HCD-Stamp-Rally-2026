@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import sys
-from types import SimpleNamespace
+from importlib.machinery import ModuleSpec
+from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 
-from hcd_stamp_device.hardware import PiCamera
+from hcd_stamp_device.hardware import DummyCamera, DummyDisplay, PiCamera, create_hardware
 
 
 @pytest.mark.parametrize(
@@ -43,3 +44,29 @@ def test_pi_camera_configures_only_supported_focus_controls(
         buffer_count=4,
     )
     camera.configure.assert_called_once_with(camera.create_video_configuration.return_value)
+
+
+def test_auto_uses_dummy_without_pi_libraries(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "picamera2", None)
+
+    camera, display = create_hardware("auto")
+
+    assert isinstance(camera, DummyCamera)
+    assert isinstance(display, DummyDisplay)
+
+
+def test_auto_fails_instead_of_dummy_when_pi_camera_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """仕様5-6/6-8: ケーブルが外れた実機がダミーで動き、ハートビートで正常に見えないようにする。"""
+
+    def missing_camera() -> None:
+        raise RuntimeError("No camera number 0 found")
+
+    picamera2 = ModuleType("picamera2")
+    picamera2.__spec__ = ModuleSpec("picamera2", None)
+    picamera2.Picamera2 = missing_camera  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "picamera2", picamera2)
+
+    with pytest.raises(RuntimeError, match="No camera"):
+        create_hardware("auto")

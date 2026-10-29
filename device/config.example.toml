@@ -13,6 +13,6 @@ spot_id = "spot-01"
 queue_file = "/var/lib/hcd-stamp-device/pending-stamps.json"
 
 [hardware]
-# auto: Pi用ライブラリが利用可能なら実機、それ以外はダミー。
+# auto: Pi用ライブラリが見つかれば実機（カメラを開けなければ異常終了）、なければダミー。
 # dummy: 開発PC用。pi: 実機を必須にする。
 backend = "auto"

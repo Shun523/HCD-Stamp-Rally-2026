@@ -24,7 +24,8 @@ APIキーをGitへ追加しないでください。開発PCで起動する場合
 ```
 
 `auto` はPi用ライブラリが見つかる実機ではカメラと液晶を、見つからないPCでは
-ダミーを使います。実機ではOpenCV、Picamera2、Blinka、
+ダミーを使います。実機でカメラを開けない場合（ケーブル外れなど）は、ダミーにせず異常終了します。
+ダミーで動き続けるとハートビートが届き、ダッシュボードで正常に見えるためです。実機ではOpenCV、Picamera2、Blinka、
 `adafruit-circuitpython-rgb-display`も導入してください。設定されるカメラは
 640×480・15fpsで、3フレームに1回だけ `cv2.QRCodeDetector` が解析します。
 Camera Module 2と3の両方に対応します。カメラが`AfMode`と`LensPosition`の両方を
