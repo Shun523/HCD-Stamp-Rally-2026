@@ -61,8 +61,8 @@ def center_square(frame: Any) -> Any:
 
 
 def frame_to_lcd_image(frame: Any) -> Image.Image:
-    """240pxへ縮小し、取り付け向きを反時計回り90度補正する（仕様6-2）。"""
+    """240pxへ縮小し、取り付け向きを180度補正する（仕様6-2）。"""
 
     image = Image.fromarray(frame)
     image = image.resize((LCD_SIZE, LCD_SIZE), Image.Resampling.BILINEAR)
-    return image.rotate(90)
+    return image.rotate(180)

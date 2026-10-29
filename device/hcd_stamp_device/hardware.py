@@ -97,9 +97,9 @@ class PiDisplay:
             rst=reset,
             width=LCD_SIZE,
             height=LCD_SIZE,
-            # 液晶の取り付け向きに合わせ、表示する画像をすべて反時計回りに90度回す。
-            # カメラ映像の向き補正（仕様6-2）はこれとは別に vision.py で行う。
-            rotation=90,
+            # 液晶は参加者から見て正しい向きに取り付けてあるので回さない。
+            # カメラ映像だけの向き補正（仕様6-2）は vision.py で行う。
+            rotation=0,
             baudrate=24_000_000,
         )
 
