@@ -266,7 +266,7 @@ cd /opt/hcd-stamp-device
 sudo -u stamp /opt/hcd-stamp-device/.venv/bin/hcd-stamp-device
 ```
 
-- [ ] 液晶にカメラ映像が表示される（中央を正方形に切り抜き、反時計回りに90度回転）（spec 6-2）
+- [ ] 液晶にカメラ映像が表示される（中央を正方形に切り抜き、180度回転）（spec 6-2）
 - [ ] 液晶のカメラ映像と結果表示の文字が、参加者が見る正面から正しい向きに見える
 - [ ] カメラの前で物を動かすと、液晶の映像も動く
 - [ ] QRを映すと緑の枠が表示される
@@ -382,7 +382,8 @@ echo "$REV"
 - 再送キューが0バイトでも起動を続ける修正（`6636320`。spec 6-7）。2-3の確認で `起動修正 OK` が出ることを確かめる
 - 押印成功時の液晶の演出と3秒表示（`7384cac`。spec v1.15、6-2）
 - `backend = "auto"` でも、実機でカメラを開けないときはダミーで動き続けず異常終了する（`cb9e142`。spec 5-6、6-8）。`backend = "pi"` の機体（1-5）の動きは変わらない
-- 液晶の取り付け向きの変更に合わせ、液晶の表示全体を反時計回りに90度回す（`2e9fbda`）。カメラ映像の向き補正（spec 6-2）は変わらない
+- 液晶の取り付け向きの変更に合わせ、カメラ映像の向き補正を180度にする（`45f601a`。spec v1.17、6-2）。
+  直前の `2e9fbda` は液晶全体を回してしまい、演出が横を向く。`2e9fbda` を配った機体も、この版で入れ直す
 
 依存パッケージ、systemdのunit、設定ファイルの項目は `ed62dde` から変わっていない。手順は前回と同じでよい。
 
@@ -477,13 +478,13 @@ journalctl -u hcd-stamp-device -n 30 --no-pager
 
 ```sh
 grep -c LensPosition /opt/hcd-stamp-device/.venv/lib/python3*/site-packages/hcd_stamp_device/hardware.py
-grep -c 'rotation=90' /opt/hcd-stamp-device/.venv/lib/python3*/site-packages/hcd_stamp_device/hardware.py
+grep -c 'rotate(180)' /opt/hcd-stamp-device/.venv/lib/python3*/site-packages/hcd_stamp_device/vision.py
 ls -l /opt/hcd-stamp-device/.venv/lib/python3*/site-packages/hcd_stamp_device/assets/stamps/
 journalctl -u hcd-stamp-device -b --no-pager | grep 押印演出のコマ
 ```
 
 - [ ] `grep -c LensPosition` の結果が `2`（ピントの固定が入っている。`LensPosition` を含む行の数で、固定前の版なら `0`）
-- [ ] `grep -c 'rotation=90'` の結果が `1`（液晶の向きの変更が入っている。変更前の版なら `0`）
+- [ ] `grep -c 'rotate(180)'` の結果が `1`（カメラ映像の向きの修正が入っている。修正前の版なら `0`）
 - [ ] スタンプ画像の大きさ（`ls -l` のバイト数）が、spot-01から順に `56126`、`60174`、`63003`、`59452`、`60228`
   （確定版と一致。古い仮画像は6〜7千バイト）
 - [ ] 「押印演出のコマを48枚作りました（○秒）」が出る（押印演出が入っている。古い版では何も出ない）
@@ -496,7 +497,7 @@ journalctl -u hcd-stamp-device -b --no-pager | grep 押印演出のコマ
   ケーブルが外れても `/admin` で「正常」に見える
 - [ ] 60秒以上動かし、ログに例外や再起動の繰り返しが出ず、液晶のカメラ映像が動き続ける
 - [ ] 液晶のカメラ映像、スタンプの絵柄、結果表示の文字が、参加者が見る正面から正しい向きに見える。
-  横から見たときだけ正しく見える場合は、液晶の向きの変更（`2e9fbda`）が入っていない
+  カメラ映像か演出のどちらかだけが横を向く場合は、向きの修正（`45f601a`）が入っていない
 - [ ] ダッシュボード（`/admin`）で、この機体が「正常」、未送信キューが0件
 - [ ] 解除したスマホでQR（75×75 CSSピクセル）を出し、普段の明るさのまま筐体に押し当てて押印できる。
   液晶でスタンプが落ちて着地し、きらきらが出て、絵柄が合わせて3秒出る。スマホのスタンプ帳にも反映される
