@@ -63,7 +63,7 @@
 | 完走までにかかった時間 | 参加者ごとの最初と最後の押印 | `summary.md`（中央値・最短・最長） |
 | スポット間の移動時間 | 参加者ごとの連続する押印の時刻差 | `raw/stamps.csv` から自分で集計 |
 | 機体ごとの押印数 | `stamps.device_id` | `by-device.csv` |
-| 予備機を使った時間帯 | 差し替えの記録（spare-device.md 3章）。予備機は故障機の機体IDで動くので、`device_id` では区別できない。ハートビートのログでは再起動として表れる | `devices.csv` の `restarts` |
+| 予備機を使った時間帯 | 差し替えの記録（device.md 5-4）。予備機は故障機の機体IDで動くので、`device_id` では区別できない。ハートビートのログでは再起動として表れる | `devices.csv` の `restarts` |
 | 参加者の端末とブラウザ、LINEなどアプリ内ブラウザの割合 | `sessions.user_agent` | `browsers.csv` |
 | 押印が画面にすぐ届いたか（ACK到達率） | `deliveries` | `summary.md` |
 | サーバーの処理時間 | Cloud Loggingの押印ログ | `ack-latency.csv` |
@@ -76,17 +76,23 @@
 
 ## 4. イベント後の書き出し
 
-書き出し先はリポジトリ直下の `exports/` とする（`.gitignore` 済みで、コミットされない）。以下の例では `exports/2026-10-31/` に置く。
+書き出し先はリポジトリ直下の `exports/` とする（`.gitignore` 済みで、コミットされない）。以下の例では `exports/2026-10-31/` に置く。`$PROJECT_ID` などは deploy.md 0章の値を設定してから使う。
 
 ### 4-1. 当日のうちに
 
 - `/admin` の画面を1時間ごとなどにスクリーンショットで残す。機体の状態や参加状況の移り変わりは、ほかに残らない
 - 機体の電源を切る前に、機体ごとのログを保存する。ログがSDカードに残る設定か（`journalctl --list-boots` で前回の起動が出るか）にかかわらず、電源を切る前に取っておく
 
+Pi上で（機体ごと）:
+
 ```sh
-# Pi上で（機体ごと）
 journalctl -u hcd-stamp-device --since "2026-10-31 00:00" --no-pager > ~/hcd-device-2026-10-31.log
-# 開発PCで
+```
+
+開発PCのリポジトリ直下で（機体ごと）:
+
+```sh
+mkdir -p exports/2026-10-31/devices
 scp <ユーザー>@<機体のアドレス>:~/hcd-device-2026-10-31.log exports/2026-10-31/devices/<機体ID>.log
 ```
 

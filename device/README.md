@@ -34,7 +34,7 @@ Camera Module 2と3の両方に対応します。カメラが`AfMode`と`LensPos
 
 Picamera2はカメラ制御用のPythonライブラリ名です。カメラ本体のCamera Module 3（IMX708）にも
 使い、Pi上では`python3-picamera2`をaptで導入します。実機への導入手順は
-[`docs/device-test.md`](../docs/device-test.md) のStep 2を参照してください。
+[`docs/device.md`](../docs/device.md) の1章を参照してください。
 
 ## 模擬端末モード
 
@@ -54,8 +54,8 @@ Picamera2はカメラ制御用のPythonライブラリ名です。カメラ本�
 
 ## 資産
 
-`hcd_stamp_device/assets/stamps/` に `spot-01`〜`spot-05` の仮の240×240 PNGを
-同梱しています。確定絵柄が届いたら、同名・同寸法のPNGまたはJPEG（`.jpg`）へ差し替えてください。
+`hcd_stamp_device/assets/stamps/` に `spot-01`〜`spot-05` の確定絵柄（240×240 PNG）を
+同梱しています。差し替える場合は、同名・同寸法のPNGまたはJPEG（`.jpg`）にしてください。
 画像は起動時に5枚ともメモリへ読み込まれます。押印成功時の演出（仕様6-2）のコマも、
 起動時に自機のスポットの分だけ作ります。ログの「押印演出のコマを48枚作りました（○秒）」で、
 作るのにかかった時間を確認できます。
@@ -65,12 +65,12 @@ Picamera2はカメラ制御用のPythonライブラリ名です。カメラ本�
 
 ## 検証
 
-以下はそれぞれ1コマンドで実行できます。
+単体テスト、lint、型チェックを、上から順にそれぞれ1コマンドで実行できます。
 
 ```sh
-.venv/bin/pytest -v                  # 単体テスト
-.venv/bin/ruff check .               # lint
-.venv/bin/mypy hcd_stamp_device      # 型チェック
+.venv/bin/pytest -v
+.venv/bin/ruff check .
+.venv/bin/mypy hcd_stamp_device
 ```
 
 単体テストはHTTPをモックし、送信結果の5分類、ファイル永続キュー、再送、
@@ -97,7 +97,7 @@ unitはネットワーク時刻同期後に開始し、異常終了時は5秒後
 `StateDirectory` により再送キュー用の `/var/lib/hcd-stamp-device` はsystemdが作成します。
 アプリ本体はSDカード上の `/opt/hcd-stamp-device/.venv/` から実行されます。
 転送用のソースもSSHユーザーの `~/hcd-device-source/` に残すため、再起動時の再転送は不要です。
-配り直しの手順は [`docs/device-update.md`](../docs/device-update.md) を参照してください。
+配り直しの手順は [`docs/device.md`](../docs/device.md) の2章を参照してください。
 キューは一時ファイルの内容をディスクへ同期してから置き換え、Pi/Linuxでは
 ディレクトリも同期してから保存完了とします（仕様6-7、[Linuxのfsync仕様](https://man7.org/linux/man-pages/man2/fsync.2.html)）。
 電源を切るときは `sudo poweroff` を使い、

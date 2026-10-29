@@ -1,23 +1,35 @@
 # デプロイ手順書
 
-この手順は本番への実行手順です。実行前に `<...>` を実際の値へ置き換えます。
-仕様上、Cloud Run のリージョン、プロジェクトID、サービス名、リハーサル日は未確定のため、
-ここでは値を決めません。サーバーの秘密情報をコマンド履歴・Git・Dockerイメージへ残さないでください。
+この手順は本番への実行手順です。本番の値は0章の表のとおりです。
+サーバーの秘密情報をコマンド履歴・Git・Dockerイメージへ残さないでください。
 `VITE_GOOGLE_MAPS_API_KEY` はブラウザへ配信される公開キーであり、Webビルド成果物とDockerイメージに
 静的に埋め込まれます。秘密として扱うのではなく、Google Cloud側で利用元と利用APIを制限します。
 
-## 0. 事前に確定・用意する値
+## 0. 本番の値
 
-| 変数 | 内容 |
-| --- | --- |
-| `PROJECT_ID` | Google CloudプロジェクトID |
-| `REGION` | Cloud RunとCloud Schedulerを置くリージョン |
-| `SERVICE` | Cloud Runサービス名 |
-| `REHEARSAL_DATE` | リハーサル日（要確定） |
-| `SUPABASE_SESSION_URL` | Supabaseの**Session pooler**接続文字列 |
-| `DEVICE_KEYS_JSON` | 機体IDとAPIキーのJSON。例: `{"dev-01":"..."}` |
-| `ADMIN_PASSWORD` | スタッフ用ダッシュボードの共有パスワード |
-| `VITE_GOOGLE_MAPS_API_KEY` | HTTPリファラー制限を付けたMaps JavaScript API専用のブラウザキー |
+| 変数 | 内容 | 本番の値 |
+| --- | --- | --- |
+| `PROJECT_ID` | Google CloudプロジェクトID | `hcd-stamp-rarry-2026` |
+| `REGION` | Cloud RunとCloud Schedulerを置くリージョン | `asia-northeast1` |
+| `SERVICE` | Cloud Runサービス名 | `hcd-stamp-rally` |
+| `SERVICE_URL` | 本番URL。Mapsキーの許可はこのURLだけ。別形式の `...71301449694.asia-northeast1.run.app` は使わない | `https://hcd-stamp-rally-th6cagb4vq-an.a.run.app` |
+| `REHEARSAL_DATE` | リハーサル日 | 2026-10-30（前日確認とあわせて行う） |
+| `SUPABASE_SESSION_URL` | Supabaseの**Session pooler**接続文字列 | Secret `hcd-database-url` |
+| `DEVICE_KEYS_JSON` | 機体IDとAPIキーのJSON。例: `{"dev-01":"..."}` | Secret `hcd-device-keys` |
+| `ADMIN_PASSWORD` | スタッフ用ダッシュボードの共有パスワード | Secret `hcd-admin-password` |
+| `VITE_GOOGLE_MAPS_API_KEY` | HTTPリファラー制限を付けたMaps JavaScript API専用のブラウザキー | APIキー `hcd-stamp-rally-web-production` |
+
+この文書のコマンドを使う前に、次を貼り付けて値を設定します。
+
+```sh
+export PROJECT_ID=hcd-stamp-rarry-2026
+export REGION=asia-northeast1
+export SERVICE=hcd-stamp-rally
+export REPOSITORY=hcd-stamp-rally
+export IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE"
+export SERVICE_URL=https://hcd-stamp-rally-th6cagb4vq-an.a.run.app
+gcloud config set project "$PROJECT_ID"
+```
 
 `SUPABASE_SESSION_URL` は Supabase Dashboard の **Connect → Session pooler** からコピーします。
 Shared pooler の Session mode はポート `5432`、ユーザー名は `postgres.<PROJECT-REF>` です。
@@ -176,14 +188,52 @@ gcloud run deploy "$SERVICE" \
 コンソールに `RefererNotAllowedMapError`、`BillingNotEnabledMapError`、`ApiNotActivatedMapError`、
 `InvalidKeyMapError` が出ていないことも確認します。
 
+### 2-4. コードを更新して再デプロイする
+
+初回デプロイの後は、この手順で更新します。10月30日は3-1の条件を満たすときだけ行い、10月31日は行いません。
+0章の値を設定してから、リポジトリ直下で実行します。
+
+1. 変更をコミットし、テスト・lint・型チェック・`pnpm test:e2e` が通ることを確かめる。
+   イメージにはコミットの中身だけを入れるので、未コミットの変更は入らない。
+2. Mapsキー入りのイメージを作る。キーは登録済みのAPIキーから読み、画面には出さない。
+
+   ```sh
+   export REV="$(git rev-parse --short HEAD)"
+   (
+   set -eu
+   work="$(mktemp -d)"
+   trap 'rm -rf "$work"' EXIT
+   git archive "$REV" | tar -x -C "$work"
+   KEY_ID="$(gcloud services api-keys list --filter='displayName=hcd-stamp-rally-web-production' --format='value(name.basename())')"
+   MAPS_KEY="$(gcloud services api-keys get-key-string "$KEY_ID" --format='value(keyString)')"
+   cd "$work"
+   gcloud builds submit --config=cloudbuild.yaml --suppress-logs \
+     --substitutions="_IMAGE=$IMAGE_BASE:$REV,_VITE_GOOGLE_MAPS_API_KEY=$MAPS_KEY" . 2>&1 | grep -v AIza
+   )
+   ```
+
+3. 戻すときのために今のリビジョン名を控えてから、デプロイする。Cloud Runの設定（3章）は引き継がれる。
+
+   ```sh
+   export PREVIOUS_REVISION="$(gcloud run services describe "$SERVICE" \
+     --region="$REGION" \
+     --format='value(status.latestReadyRevisionName)')"
+   echo "$PREVIOUS_REVISION"
+   gcloud run deploy "$SERVICE" --image="$IMAGE_BASE:$REV" --region="$REGION"
+   ```
+
+4. `/api/health` が `{"ok":true,"db":"ok"}` を返すこと、`gcloud run services describe` で3章の設定が
+   変わっていないことを確かめる。問題が出たら3-1の `update-traffic` で控えたリビジョンへ戻す。
+5. デプロイしたコミット・リビジョン・戻し先を [`remaining-tasks.md`](remaining-tasks.md) に書く。
+
 ## 3. リハーサル日・イベント前日〜当日のCloud Run設定
 
 SSE接続とACK待機を単一インスタンスのメモリで扱うため、**リハーサル日**および
 **2026-10-30から2026-10-31のイベント終了まで**だけ次の設定にします。
 
 ```sh
-gcloud run services update "$SERVICE" \
-  --region="$REGION" \
+gcloud run services update hcd-stamp-rally \
+  --region=asia-northeast1 \
   --timeout=3600 \
   --min-instances=1 \
   --max-instances=1 \
@@ -200,8 +250,8 @@ gcloud run services update "$SERVICE" \
 イベント終了後と、リハーサル日・イベント前日〜当日以外は、費用を抑えるため必ず戻します。
 
 ```sh
-gcloud run services update "$SERVICE" \
-  --region="$REGION" \
+gcloud run services update hcd-stamp-rally \
+  --region=asia-northeast1 \
   --min-instances=0 \
   --max-instances=1 \
   --cpu-throttling
@@ -222,33 +272,10 @@ Cloud Runの最小インスタンスはサービスレベルで設定でき、�
 手順:
 
 1. 試験用のスマホと機体での押印を止める。
-2. 修正をコミットし、新しいコミットでイメージ名を設定し直してから、2-3章の手順でMapsキー入りのイメージを作る。
-
-   ```sh
-   export SOURCE_REVISION="$(git rev-parse --short HEAD)"
-   export IMAGE="$IMAGE_BASE:$SOURCE_REVISION"
-   ```
-
-3. 戻すときのために、今のリビジョン名を控える。
-
-   ```sh
-   export PREVIOUS_REVISION="$(gcloud run services describe "$SERVICE" \
-     --region="$REGION" \
-     --format='value(status.latestReadyRevisionName)')"
-   echo "$PREVIOUS_REVISION"
-   ```
-
-4. デプロイする。3章の試験期間用の設定（min 1、max 1、CPU常時、timeout 3600）は引き継がれる。
-
-   ```sh
-   gcloud run deploy "$SERVICE" \
-     --image="$IMAGE" \
-     --region="$REGION"
-   ```
-
-5. `gcloud run services describe` で試験期間用の設定のままであることを確かめる。
-6. 試験用のスマホはページを開き直す（新しいインスタンスにつなぎ直すため）。機体は押印のたびに新しく接続するので、操作は要らない。
-7. 5章の前日確認を最初からやり直す。
+2. 修正をコミットし、2-4の手順でイメージを作ってデプロイする。3章の試験期間用の設定（min 1、max 1、CPU常時、timeout 3600）は引き継がれる。
+3. `gcloud run services describe` で試験期間用の設定のままであることを確かめる。
+4. 試験用のスマホはページを開き直す（新しいインスタンスにつなぎ直すため）。機体は押印のたびに新しく接続するので、操作は要らない。
+5. 5章の前日確認を最初からやり直す。
 
 新しい版で問題が出たら、控えたリビジョンへ全トラフィックを戻します。戻したあとも、試験用のスマホは開き直します。
 
@@ -260,12 +287,10 @@ gcloud run services update-traffic "$SERVICE" \
 
 ## 4. Supabase停止防止用 Cloud Scheduler
 
-無料プランのSupabaseを稼働状態に保つため、`/api/health` を72時間（3日）ごとに呼びます。
+無料プランのSupabaseを稼働状態に保つため、`/api/health` を72時間（3日）ごとに呼びます。作成済み（`hcd-supabase-health`）です。
 このエンドポイントはDBへ問い合わせるため、HTTP 200だけでなく `db: "ok"` を確認します。
 
 ```sh
-export SERVICE_URL='https://<Cloud Run URL>'
-
 gcloud scheduler jobs create http hcd-supabase-health \
   --location="$REGION" \
   --schedule='every 72 hours' \
@@ -297,7 +322,7 @@ gcloud scheduler jobs describe hcd-supabase-health --location="$REGION"
 - [ ] 試験に使うスマホで `/admin` にログインし、「この端末で開始前の参加者画面を使う」を押してから「参加者画面を開く」を開く。
   解除していない端末では待機画面が出ることも確認する（spec 4-8、7章）。
 - [ ] 全5機で、実スマホでQR表示→押印→SSE反映→ACKを1回通す。テスト用セッションを使い、
-  本番参加者データを混ぜない。予備機は [`spare-device.md`](spare-device.md) 3章の切り替えで1回通し、同4章で戻して電源を切る。
+  本番参加者データを混ぜない。予備機は [`device.md`](device.md) 5-4の切り替えで1回通し、5-5で戻して電源を切る。
 - [ ] 押印後にWebビルド成果物（画像・`/admin` を含む）が同一のCloud Run URLから読めることを確認する。
 
 ## 6. 当日朝（10月31日）の確認
@@ -314,7 +339,4 @@ gcloud scheduler jobs describe hcd-supabase-health --location="$REGION"
 
 ## 7. イベント終了後
 
-1. Cloud Runを通常設定（min 0、CPUリクエスト時のみ）へ戻す。
-2. 当日中に未送信キューが残った端末を確認し、必要ならネットワーク回復後に再送する。機体ごとのログを保存してから（[data.md](data.md) 4-1）、`sudo poweroff` で電源を落とす。
-3. 11月中旬までに、Cloud Loggingのログ、DBのデータ、Cloud Runのグラフを書き出す（[data.md](data.md) 4章）。Cloud Loggingのログは30日で消える。
-4. 書き出しを確認したら、Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除する。2026年11月30日までにSupabaseのプロジェクトと生データを削除する（[data.md](data.md) 5〜6章）。
+Cloud Runを3章の通常設定へ戻す。書き出し、機体の電源の切り方、サービスを閉じる順番は [data.md](data.md) 4章・6章に従う。
