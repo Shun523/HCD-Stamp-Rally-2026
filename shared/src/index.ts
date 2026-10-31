@@ -99,9 +99,10 @@ export const adminStatsResponseSchema = z.object({
   sample_spots_active: z.boolean(),
 });
 
-// 仕様4-8・9章: 一般開放の状態。判定はサーバー時刻で行い、待機画面の待ち時間にも使う。
+// 仕様4-8・9章: 一般開放と終了の状態。判定はサーバー時刻で行い、待機画面の待ち時間にも使う。
 export const statusResponseSchema = z.object({
   open: z.boolean(),
+  ended: z.boolean(),
   opens_at: isoTimestamp,
   server_time: isoTimestamp,
 });

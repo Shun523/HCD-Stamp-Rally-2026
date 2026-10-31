@@ -20,6 +20,7 @@ import {
   DEFAULT_SECURITY_LIMITS,
   EVENT_END_AT,
   OFFLINE_RESEND_END_AT,
+  PARTICIPANT_CLOSE_AT,
   PARTICIPANT_OPEN_AT,
   SESSION_COOKIE_EXPIRES_AT,
   SSE_PING_INTERVAL_MS,
@@ -66,8 +67,9 @@ export function createApp(dependencies: AppDependencies) {
   const config = {
     ackTimeoutMs: dependencies.config?.ackTimeoutMs ?? DEFAULT_ACK_TIMEOUT_MS,
     adminPassword: dependencies.config?.adminPassword ?? "",
-    // 仕様4-8: 開放時刻はローカル開発と自動テストだけ上書きする。
+    // 仕様4-8: 開放・終了時刻はローカル開発と自動テストだけ上書きする。
     participantOpenAt: dependencies.config?.participantOpenAt ?? PARTICIPANT_OPEN_AT,
+    participantCloseAt: dependencies.config?.participantCloseAt ?? PARTICIPANT_CLOSE_AT,
   };
   const hub = dependencies.hub ?? new SseHub();
   const ackTracker = dependencies.ackTracker ?? new AckTracker();
@@ -170,7 +172,10 @@ export function createApp(dependencies: AppDependencies) {
   };
 
   // 仕様4-8: 一般開放後は全員、開放前は管理画面で解除した端末だけを参加者として扱う。
-  const isOpenFor = (c: Context, current = now()) => current >= config.participantOpenAt || hasPreviewAccess(c);
+  // 終了後は解除した端末も含めて誰も参加者として扱わず、新しいセッションも発行しない。
+  const isEndedAt = (current: Date) => current >= config.participantCloseAt;
+  const isOpenFor = (c: Context, current = now()) => !isEndedAt(current)
+    && (current >= config.participantOpenAt || hasPreviewAccess(c));
 
   // 仕様5-1・4-8: 初回アクセスでセッションを発行し、HttpOnly・Secure・SameSite=Lax Cookieを設定する。
   // 一般開放前は発行せず上限カウントも消費しない。Webアプリが待機画面を出す。
@@ -233,6 +238,7 @@ export function createApp(dependencies: AppDependencies) {
     const current = now();
     const body: StatusResponse = {
       open: isOpenFor(c, current),
+      ended: isEndedAt(current),
       opens_at: config.participantOpenAt.toISOString(),
       server_time: current.toISOString(),
     };

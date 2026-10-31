@@ -2,6 +2,8 @@ import { fileURLToPath } from "node:url";
 
 // 仕様4-8: 一般開放は稼働開始（Q-01）と同じ10月31日10:00。それまでは待機画面だけを出す。
 export const PARTICIPANT_OPEN_AT = new Date("2026-10-31T10:00:00+09:00");
+// 仕様4-8: 景品交換の締め切り（10月31日15:30）で参加者向けWebアプリを終了画面だけにする。
+export const PARTICIPANT_CLOSE_AT = new Date("2026-10-31T15:30:00+09:00");
 export const EVENT_END_AT = new Date("2026-10-31T16:00:00+09:00");
 // 仕様5-2/6-7: 16時までに端末へ保存された押印は10月31日中だけ再送を受け付ける。
 export const OFFLINE_RESEND_END_AT = new Date("2026-11-01T00:00:00+09:00");
@@ -44,7 +46,7 @@ const integerSetting = (env: NodeJS.ProcessEnv, name: string, fallback: number, 
   return value;
 };
 
-// 仕様4-8: 開放時刻の上書きはローカル開発と自動テスト用。時差の取り違えを防ぐため、時差付きのISO 8601だけを受け付ける。
+// 仕様4-8: 開放・終了時刻の上書きはローカル開発と自動テスト用。時差の取り違えを防ぐため、時差付きのISO 8601だけを受け付ける。
 const isoDateTimeWithOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
 const dateSetting = (env: NodeJS.ProcessEnv, name: string, fallback: Date): Date => {
   const raw = env[name];
@@ -66,6 +68,7 @@ export type ServerConfig = {
   securityLimits: SecurityLimits;
   trustedProxyHops: number;
   participantOpenAt: Date;
+  participantCloseAt: Date;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -91,5 +94,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // 現在の直接run.app URLはCloud Runの1段のプロキシを信頼する。ローカルではヘッダーを信頼しない。
     trustedProxyHops: integerSetting(env, "TRUSTED_PROXY_HOPS", env.K_SERVICE ? 1 : 0, 0),
     participantOpenAt: dateSetting(env, "PARTICIPANT_OPEN_AT", PARTICIPANT_OPEN_AT),
+    participantCloseAt: dateSetting(env, "PARTICIPANT_CLOSE_AT", PARTICIPANT_CLOSE_AT),
   };
 }

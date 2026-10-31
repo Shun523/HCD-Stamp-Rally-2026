@@ -33,9 +33,16 @@ describe("shared API contracts", () => {
   it("accepts the participant opening status with the server time", () => {
     expect(statusResponseSchema.safeParse({
       open: false,
+      ended: false,
       opens_at: "2026-10-31T01:00:00.000Z",
       server_time: "2026-10-30T09:00:00.000Z",
     }).success).toBe(true);
-    expect(statusResponseSchema.safeParse({ open: false, opens_at: "2026-10-31T01:00:00.000Z" }).success).toBe(false);
+    expect(statusResponseSchema.safeParse({ open: false, ended: false, opens_at: "2026-10-31T01:00:00.000Z" }).success).toBe(false);
+    // 仕様4-8: 終了の判定もサーバーが返す。
+    expect(statusResponseSchema.safeParse({
+      open: false,
+      opens_at: "2026-10-31T01:00:00.000Z",
+      server_time: "2026-10-30T09:00:00.000Z",
+    }).success).toBe(false);
   });
 });

@@ -54,7 +54,7 @@ async function mockedPage(context: BrowserContext, language: Language, stampCoun
     Object.assign(window, { __stampSources: sources });
   }, { initialLanguage: language });
   const stamps = spots.slice(0, stampCount).map((spot, index) => ({ spot_id: spot.id, stamped_at: `2026-10-31T04:2${index}:05.000Z` }));
-  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: true, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T03:00:00.000Z" }) }));
+  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: true, ended: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T03:00:00.000Z" }) }));
   await page.route("**/api/me", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ completed: stampCount === 5, stamps, token: "stamp-token-for-screenshot", token_expires_at: "2026-10-31T07:00:00.000Z" }) }));
   await page.route("**/api/spots", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ spots }) }));
   await page.route("**/api/ack", (route) => route.fulfill({ status: 204 }));
@@ -69,7 +69,7 @@ async function waitingPage(context: BrowserContext, language: Language): Promise
   await page.addInitScript((initialLanguage) => {
     Object.defineProperty(navigator, "languages", { configurable: true, value: initialLanguage === "ja" ? ["ja-JP"] : ["en-US"] });
   }, language);
-  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" }) }));
+  await page.route("**/api/status", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ open: false, ended: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" }) }));
   return page;
 }
 

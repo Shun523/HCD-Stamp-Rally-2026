@@ -7,8 +7,9 @@ import { ParticipantGate } from "../src/components/ParticipantGate.js";
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const opensAt = "2026-10-31T01:00:00.000Z";
-const waiting: StatusResponse = { open: false, opens_at: opensAt, server_time: "2026-10-31T00:55:00.000Z" };
-const opened: StatusResponse = { open: true, opens_at: opensAt, server_time: "2026-10-31T01:00:05.000Z" };
+const waiting: StatusResponse = { open: false, ended: false, opens_at: opensAt, server_time: "2026-10-31T00:55:00.000Z" };
+const opened: StatusResponse = { open: true, ended: false, opens_at: opensAt, server_time: "2026-10-31T01:00:05.000Z" };
+const ended: StatusResponse = { open: false, ended: true, opens_at: opensAt, server_time: "2026-10-31T06:30:00.000Z" };
 
 let container: HTMLDivElement;
 let root: Root;
@@ -82,5 +83,23 @@ describe("ParticipantGate (仕様4-8)", () => {
     await act(async () => { container.querySelector<HTMLButtonElement>('button[aria-label="English"]')!.click(); });
     expect(container.textContent).toContain("Sat, Oct 31, 10:00 (JST)");
     expect(document.documentElement.lang).toBe("en");
+  });
+
+  it("shows only the end screen after the end and stops checking", async () => {
+    const getStatus = vi.fn<() => Promise<StatusResponse>>().mockResolvedValue(ended);
+    const reload = await renderGate(getStatus);
+    expect(container.textContent).toContain("スタンプラリーは終了しました");
+    expect(container.textContent).toContain("ご参加ありがとうございました");
+    expect(container.textContent).not.toContain("stamp book");
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(60 * 60_000); });
+    expect(getStatus).toHaveBeenCalledTimes(1);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("switches the end screen to English", async () => {
+    await renderGate(vi.fn<() => Promise<StatusResponse>>().mockResolvedValue(ended));
+    await act(async () => { container.querySelector<HTMLButtonElement>('button[aria-label="English"]')!.click(); });
+    expect(container.textContent).toContain("The stamp rally has ended");
   });
 });

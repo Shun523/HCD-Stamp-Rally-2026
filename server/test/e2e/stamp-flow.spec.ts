@@ -87,8 +87,8 @@ test("模擬端末の押印と再送が同一オリジンのスタンプ帳へ�
   const app = createApp({
     repository,
     hub,
-    // 仕様4-8: 実際の時計で動かすため、一般開放後の流れを試すよう開放時刻を過去にする。
-    config: { ackTimeoutMs: 1_000, participantOpenAt: new Date("2026-10-01T00:00:00+09:00") },
+    // 仕様4-8: 実際の時計で動かすため、一般開放後の流れを試すよう開放時刻を過去に、終了時刻を先にする。
+    config: { ackTimeoutMs: 1_000, participantOpenAt: new Date("2026-10-01T00:00:00+09:00"), participantCloseAt: new Date("2099-01-01T00:00:00+09:00") },
     webRoot: "../web/dist",
     secureCookies: false,
   });
@@ -172,7 +172,7 @@ test("一般開放前は待機画面を出し、管理画面で解除した端�
   const repository = new MemoryRepository();
   const app = createApp({
     repository,
-    config: { ackTimeoutMs: 1_000, adminPassword: "e2e-staff-password", participantOpenAt: new Date(Date.now() + 60 * 60_000) },
+    config: { ackTimeoutMs: 1_000, adminPassword: "e2e-staff-password", participantOpenAt: new Date(Date.now() + 60 * 60_000), participantCloseAt: new Date("2099-01-01T00:00:00+09:00") },
     webRoot: "../web/dist",
     secureCookies: false,
   });
@@ -191,6 +191,30 @@ test("一般開放前は待機画面を出し、管理画面で解除した端�
     await expect(page.locator("[data-stamp-card]")).toBeVisible();
     expect((await context.cookies(origin)).map((cookie) => cookie.name)).toContain(SESSION_COOKIE);
     expect(repository.sessions.size).toBe(1);
+  } finally {
+    await stopServer(running.server).catch(() => undefined);
+  }
+});
+
+// 仕様4-8: 終了後は解除した端末も含めて終了画面だけを出し、セッションを発行しない。
+test("終了後は終了画面だけを出し、セッションを発行しない", async ({ page, context }) => {
+  const repository = new MemoryRepository();
+  const app = createApp({
+    repository,
+    config: { ackTimeoutMs: 1_000, adminPassword: "e2e-staff-password", participantOpenAt: new Date("2026-10-01T00:00:00+09:00"), participantCloseAt: new Date(Date.now() - 60_000) },
+    webRoot: "../web/dist",
+    secureCookies: false,
+  });
+  const running = await startServer(app.fetch);
+  const origin = `http://127.0.0.1:${running.port}`;
+  try {
+    const unlock = await page.request.post(`${origin}/api/admin/preview`, { headers: { "x-admin-password": "e2e-staff-password" } });
+    expect(unlock.status()).toBe(200);
+    await page.goto(`${origin}/`);
+    await expect(page.getByText("スタンプラリーは終了しました")).toBeVisible();
+    await expect(page.locator("[data-stamp-card]")).toHaveCount(0);
+    expect((await context.cookies(origin)).map((cookie) => cookie.name)).not.toContain(SESSION_COOKIE);
+    expect(repository.sessions.size).toBe(0);
   } finally {
     await stopServer(running.server).catch(() => undefined);
   }

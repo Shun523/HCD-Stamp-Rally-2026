@@ -211,6 +211,7 @@ const createTestApp = (repository: MemoryRepository, now = () => new Date("2026-
 });
 
 const beforeOpening = () => new Date("2026-10-31T09:59:59+09:00");
+const atClosing = () => new Date("2026-10-31T15:30:00+09:00");
 const unlockHeaders = { "x-admin-password": "staff-password" };
 const statusOpen = async (app: ReturnType<typeof createApp>, cookie?: string) => {
   const response = await app.request("/api/status", cookie ? { headers: { cookie } } : undefined);
@@ -545,6 +546,7 @@ describe("participant opening (仕様4-8・7章)", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toEqual({
       open: false,
+      ended: false,
       opens_at: "2026-10-31T01:00:00.000Z",
       server_time: "2026-10-31T00:59:59.000Z",
     });
@@ -633,5 +635,49 @@ describe("participant opening (仕様4-8・7章)", () => {
       body: JSON.stringify({ device_id: "dev-01", uptime_seconds: 10, last_stamp_count: 1, pending_queue_count: 0 }),
     });
     expect(heartbeat.status).toBe(200);
+  });
+});
+
+describe("participant closing (仕様4-8)", () => {
+  it("stops issuing sessions and reports the end from 15:30 on October 31", async () => {
+    const repository = new MemoryRepository();
+    let current = new Date("2026-10-31T15:29:59+09:00");
+    const app = createTestApp(repository, () => current);
+    expect((await app.request("/", { redirect: "manual" })).status).toBe(302);
+    expect(repository.sessions.size).toBe(1);
+    current = atClosing();
+    const response = await app.request("/", { redirect: "manual" });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(repository.sessions.size).toBe(1);
+    const status = await (await app.request("/api/status")).json() as { open: boolean; ended: boolean };
+    expect(status).toMatchObject({ open: false, ended: true });
+  });
+
+  it("does not let devices unlocked from the dashboard past the end", async () => {
+    const repository = new MemoryRepository();
+    const app = createTestApp(repository, atClosing);
+    const unlock = await app.request("/api/admin/preview", { method: "POST", headers: unlockHeaders });
+    const preview = unlock.headers.get("set-cookie")!.split(";", 1)[0]!;
+    expect(await statusOpen(app, preview)).toBe(false);
+    expect((await app.request("/", { redirect: "manual", headers: { cookie: preview } })).status).toBe(200);
+    expect(repository.sessions.size).toBe(0);
+  });
+
+  it("keeps existing sessions and stamps working until 16:00 after the end", async () => {
+    const repository = new MemoryRepository();
+    let current = new Date("2026-10-31T12:00:00+09:00");
+    const app = createTestApp(repository, () => current);
+    const cookie = sessionCookie(await app.request("/", { redirect: "manual" }));
+    current = new Date("2026-10-31T15:45:00+09:00");
+    const me = await app.request("/api/me", { headers: { cookie } });
+    expect(me.status).toBe(200);
+    const token = (await me.json() as { token: string }).token;
+    const stamped = await app.request("/api/stamp", {
+      method: "POST",
+      headers: { authorization: "Bearer device-key", "content-type": "application/json" },
+      body: JSON.stringify({ token, device_id: "dev-01" }),
+    });
+    expect(stamped.status).toBe(200);
   });
 });

@@ -45,6 +45,13 @@ describe("server config", () => {
       .toBe("2026-10-01T00:00:00.000Z");
   });
 
+  it("closes to participants at 15:30 on October 31 unless a local override is given", () => {
+    expect(loadConfig({}).participantCloseAt.toISOString()).toBe("2026-10-31T06:30:00.000Z");
+    expect(loadConfig({ PARTICIPANT_CLOSE_AT: "2099-01-01T00:00:00+09:00" }).participantCloseAt.toISOString())
+      .toBe("2098-12-31T15:00:00.000Z");
+    expect(() => loadConfig({ PARTICIPANT_CLOSE_AT: "2026-10-31T15:30:00" })).toThrow("PARTICIPANT_CLOSE_AT");
+  });
+
   it("rejects an opening time without an explicit UTC offset", () => {
     for (const value of ["", "2026-10-31", "2026-10-31T10:00:00", "tomorrow", "2026-13-01T00:00:00+09:00"]) {
       expect(() => loadConfig({ PARTICIPANT_OPEN_AT: value })).toThrow("PARTICIPANT_OPEN_AT");

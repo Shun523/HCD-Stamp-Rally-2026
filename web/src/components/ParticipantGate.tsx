@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { StatusResponse } from "@hcd-stamp-rally/shared";
 import { createParticipantApi } from "../api.js";
 import { content, detectInitialLanguage, type Language } from "../data/content.js";
-import { nextStatusCheckDelay } from "../opening.js";
+import { formatOpensAt, nextStatusCheckDelay } from "../opening.js";
 import { WaitingScreen } from "./WaitingScreen.js";
 import styles from "../App.module.css";
 
@@ -10,6 +10,7 @@ type GateState =
   | { phase: "checking" }
   | { phase: "open" }
   | { phase: "waiting"; status: StatusResponse }
+  | { phase: "ended" }
   | { phase: "error" };
 
 type Props = {
@@ -21,7 +22,7 @@ type Props = {
 // 開放前に読み込んだページにはセッションが無いため、/ を読み込み直してサーバーに発行させる（仕様5-1）。
 const reloadParticipantApp = () => window.location.replace("/");
 
-// 仕様4-8: 一般開放の判定はサーバーに任せる。開放前は待機画面だけを出し、
+// 仕様4-8: 一般開放と終了の判定はサーバーに任せる。開放前は待機画面、終了後は終了画面だけを出し、
 // /api/me・SSE・10秒ポーリング（4-4）を始めないよう、子の参加者画面を描画しない。
 export function ParticipantGate({ children, getStatus, reload = reloadParticipantApp }: Props) {
   const fetchStatus = useMemo(() => getStatus ?? createParticipantApi().getStatus, [getStatus]);
@@ -48,6 +49,12 @@ export function ParticipantGate({ children, getStatus, reload = reloadParticipan
       if (!active || opened) return;
       const isFirstCheck = !checkedOnce;
       checkedOnce = true;
+      // 終了は戻らないため、以後は確認しない。
+      if (status.ended) {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        setState({ phase: "ended" });
+        return;
+      }
       if (status.open) {
         opened = true;
         document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -78,7 +85,8 @@ export function ParticipantGate({ children, getStatus, reload = reloadParticipan
 
   switch (state.phase) {
     case "open": return children;
-    case "waiting": return <WaitingScreen copy={copy} language={language} onLanguageChange={setLanguage} opensAt={state.status.opens_at} />;
+    case "waiting": return <WaitingScreen copy={copy} language={language} onLanguageChange={setLanguage} tag={copy.waitingTag} headline={formatOpensAt(state.status.opens_at, language)} message={copy.waitingMessage} />;
+    case "ended": return <WaitingScreen copy={copy} language={language} onLanguageChange={setLanguage} tag={copy.endedTag} headline={copy.endedHeadline} message={copy.endedMessage} />;
     case "error": return <main className={styles.loading}><p className={styles.error} role="alert">{copy.statusError}</p></main>;
     case "checking": return <main className={styles.loading}><p>{copy.loading}</p></main>;
   }
