@@ -8,3 +8,5 @@ test-results/
 playwright-report/
 # イベント後の書き出し（参加者の生データを含むためコミットしない）
 exports/
+# カメラ単体の撮影確認で取り出す画像（docs/device.md 1-3。人が写ることがあるためコミットしない）
+/camera-test.jpg

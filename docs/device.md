@@ -644,7 +644,7 @@ SSHも切れない。既存の接続設定は消さずに予備として残す�
 sudo systemd-run --unit wifi-check bash -c '
 for c in $(nmcli -g NAME connection show | grep ^pocket-wifi); do
   echo "== $c"
-  nmcli connection up "$c" && sleep 5 && curl -s -m 10 https://hcd-stamp-rally-th6cagb4vq-an.a.run.app/api/health
+  nmcli connection up "$c" && sleep 5 && curl -s -m 10 <本番URL>/api/health
   echo
 done'
 ```
@@ -668,7 +668,7 @@ done'
 ```sh
 nmcli device status
 iw dev wlan0 link
-curl https://hcd-stamp-rally-th6cagb4vq-an.a.run.app/api/health
+curl <本番URL>/api/health
 timedatectl
 journalctl -u hcd-stamp-device -n 30
 ```
@@ -879,7 +879,7 @@ PCブラウザで `http://localhost:8787`（スタンプ帳）と `http://localh
 
 ```toml
 [server]
-base_url = "https://hcd-stamp-rally-th6cagb4vq-an.a.run.app"
+base_url = "<本番URL>"
 api_key = "<本番用キー>"
 ```
 
@@ -980,7 +980,7 @@ SPARE='<SSHユーザー>@<予備機のホスト名>.local'
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 ssh "$SPARE" 'sudo -n cat /etc/hcd-stamp-device/config.toml' > "$work/base.toml"
-gcloud secrets versions access latest --secret=hcd-device-keys --project=hcd-stamp-rarry-2026 > "$work/keys.json"
+gcloud secrets versions access latest --secret=hcd-device-keys --project='<プロジェクトID>' > "$work/keys.json"
 python3 -I - "$work" <<'EOF'
 import json, pathlib, re, sys
 work = pathlib.Path(sys.argv[1])

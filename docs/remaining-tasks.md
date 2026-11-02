@@ -1,7 +1,7 @@
 # 本番までの残作業
 
 10月28日に、期限ごとに並べ直した。終わったものから `[x]` にし、見直しのときに末尾の「完了済み」へ移す。
-本番URL: `https://hcd-stamp-rally-th6cagb4vq-an.a.run.app`（地図キーの許可はこのURLのみ。別形式の `...71301449694.asia-northeast1.run.app` は使わない）
+本番URLは Cloud Run の `https://hcd-stamp-rally-<ハッシュ>-an.a.run.app` の形式（以下 `<本番URL>`。地図キーの許可はこのURLのみ。別形式の `...<プロジェクト番号>.asia-northeast1.run.app` は使わない）
 
 | 日付 | 内容 |
 | --- | --- |
@@ -81,7 +81,7 @@
 - [x] 最終デプロイしたコミットにタグを付ける（data.md 4-4）。11月1日に `5a14924` へ `event-2026-10-31` を付けた（ローカルのみ）
 - [x] 11月中旬まで: Cloud Logging・DB・グラフの書き出し（data.md 4章、`db:export`）。11月1日に `exports/2026-10-31/` へ書き出した。DBはボットを集計から除く版で書き出し直した。グラフはスクリーンショットの代わりに、1分ごとの数値を `monitoring/` にCSVで残した
 - [ ] 機体ログ（data.md 4-1）は電源を切る前に保存しなかった。次に機体を起動したとき、`journalctl --list-boots` に10月31日の起動が出れば、data.md 4-1 のコマンドに `--until "2026-11-01 00:00"` を足して取れる。出なければログは残っていない
-- [x] 書き出しを確認したら: Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除してサービスを閉じる（data.md 6章）。11月2日に、Cloud Runの設定と操作の記録を `exports/2026-10-31/cloud-run/` に残してから、Cloud Run と Cloud Scheduler を削除し、プロジェクトの課金を無効にした（請求先アカウントとのリンクを解除）。Secret 3つ、イメージのリポジトリ、Cloud Build のバケット、Maps APIキーは残っているが、課金が無効なので料金は発生しない。これらも消すなら、プロジェクトごと削除する（`gcloud projects delete hcd-stamp-rarry-2026`。30日間は復元でき、その後ログも含めて消える）
+- [x] 書き出しを確認したら: Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除してサービスを閉じる（data.md 6章）。11月2日に、Cloud Runの設定と操作の記録を `exports/2026-10-31/cloud-run/` に残してから、Cloud Run と Cloud Scheduler を削除し、プロジェクトの課金を無効にした（請求先アカウントとのリンクを解除）。Secret 3つ、イメージのリポジトリ、Cloud Build のバケット、Maps APIキーは残っているが、課金が無効なので料金は発生しない。これらも消すなら、プロジェクトごと削除する（`gcloud projects delete <プロジェクトID>`。30日間は復元でき、その後ログも含めて消える）
 - [ ] 11月30日まで: Supabase のプロジェクトと生データ（`exports/` の `raw/`、ログ）を削除し、集計（`summary/`）だけを残す
 - [ ] ローカル試験用のHyper-Vファイアウォールルールを削除する（Windowsの管理者PowerShellで `Remove-NetFirewallHyperVRule -Name HCD-Dev-8787`）
 - 開発中の会話記録に機体キー・DBパスワードの一部・Mapsキーが表示された。サービスを閉じる前に記録を共有するなら、機体キーとDBパスワードを作り直す（閉じた後は不要）

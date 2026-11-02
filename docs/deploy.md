@@ -7,12 +7,15 @@
 
 ## 0. 本番の値
 
+リポジトリの公開にあたり、プロジェクトIDと本番URLは `<プロジェクトID>`・`<本番URL>` に置き換えました。
+本番URLは Cloud Run の `https://<サービス名>-<ハッシュ>-an.a.run.app` の形式です。
+
 | 変数 | 内容 | 本番の値 |
 | --- | --- | --- |
-| `PROJECT_ID` | Google CloudプロジェクトID | `hcd-stamp-rarry-2026` |
+| `PROJECT_ID` | Google CloudプロジェクトID | `<プロジェクトID>` |
 | `REGION` | Cloud RunとCloud Schedulerを置くリージョン | `asia-northeast1` |
 | `SERVICE` | Cloud Runサービス名 | `hcd-stamp-rally` |
-| `SERVICE_URL` | 本番URL。Mapsキーの許可はこのURLだけ。別形式の `...71301449694.asia-northeast1.run.app` は使わない | `https://hcd-stamp-rally-th6cagb4vq-an.a.run.app` |
+| `SERVICE_URL` | 本番URL。Mapsキーの許可はこのURLだけ。別形式の `...<プロジェクト番号>.asia-northeast1.run.app` は使わない | `<本番URL>` |
 | `REHEARSAL_DATE` | リハーサル日 | 2026-10-30（前日確認とあわせて行う） |
 | `SUPABASE_SESSION_URL` | Supabaseの**Session pooler**接続文字列 | Secret `hcd-database-url` |
 | `DEVICE_KEYS_JSON` | 機体IDとAPIキーのJSON。例: `{"dev-01":"..."}` | Secret `hcd-device-keys` |
@@ -22,12 +25,12 @@
 この文書のコマンドを使う前に、次を貼り付けて値を設定します。
 
 ```sh
-export PROJECT_ID=hcd-stamp-rarry-2026
+export PROJECT_ID='<プロジェクトID>'
 export REGION=asia-northeast1
 export SERVICE=hcd-stamp-rally
 export REPOSITORY=hcd-stamp-rally
 export IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE"
-export SERVICE_URL=https://hcd-stamp-rally-th6cagb4vq-an.a.run.app
+export SERVICE_URL='<本番URL>'
 gcloud config set project "$PROJECT_ID"
 ```
 

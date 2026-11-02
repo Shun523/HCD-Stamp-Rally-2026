@@ -10,7 +10,7 @@
    - `03-device.md`
    - `04-integration.md`
 
-運用の文書:
+運用の文書（2026年10月31日のイベントに向けて書いた手順と、その記録。公開にあたり、本番のプロジェクトIDとURLは記号に置き換えた）:
 
 - [`remaining-tasks.md`](remaining-tasks.md) — 本番までの残作業と、日ごとにやること。ここから各手順へたどる
 - [`deploy.md`](deploy.md) — サーバー（Cloud Run・Supabase）のデプロイ、試験期間用の設定、前日と当日朝の確認
