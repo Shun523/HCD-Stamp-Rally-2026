@@ -5,7 +5,7 @@ import { ParticipantAccessCard } from "../src/components/ParticipantAccessCard.j
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const beforeOpening = { opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" };
+const beforeOpening = { ended: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-30T09:00:00.000Z" };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 const unlockLabel = "この端末で開始前の参加者画面を使う";
 
@@ -50,7 +50,7 @@ describe("ParticipantAccessCard (仕様7章・4-8)", () => {
   });
 
   it("shows the public state without the unlock button after opening", async () => {
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async () => json({ open: true, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T01:00:00.000Z" })));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(async () => json({ open: true, ended: false, opens_at: "2026-10-31T01:00:00.000Z", server_time: "2026-10-31T01:00:00.000Z" })));
     await act(async () => root.render(<ParticipantAccessCard onUnauthorized={vi.fn()} password="staff-password" />));
     expect(container.textContent).toContain("公開中");
     expect(container.querySelector("button")).toBeNull();
