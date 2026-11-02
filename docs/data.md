@@ -17,6 +17,7 @@
 
 - 参加者は**ブラウザ単位**で数える。同じ人が別のアプリやブラウザで開くと2人になり、1台のスマホを家族で使うと1人になる
 - 一般開放（10月31日10:00）より前に作られたセッションは、すべてスタッフの試験用（仕様4-8）。集計では自動で除く
+- ページを開くだけでセッションが作られるため、LINEやSlackにURLを貼ると、プレビューを作るボットのセッションもできる。当日は一般開放後だけで113件あった。集計では User-Agent で判定して除く
 - `stamps.stamped_at` は**機体がQRを読んだ時刻**（機体の時計）。オフラインで一時保存された押印も、読んだ時刻で記録される
 - `deliveries.result` の意味（仕様5-4）
   - `acked`: スマホに通知が届き、受信確認（ACK）が返った。3秒を過ぎてから返った場合は `ack_timed_out_at` にも時刻が入る
@@ -125,7 +126,7 @@ DATABASE_URL="$SUPABASE_SESSION_URL" pnpm --filter @hcd-stamp-rally/server db:ex
 
 | ファイル | 内容 | 保存 |
 | --- | --- | --- |
-| `raw/sessions.csv` | 参加者ごとの開始時刻、試験用かどうか、OS、ブラウザ、User-Agent | 11月30日までに削除 |
+| `raw/sessions.csv` | 参加者ごとの開始時刻、試験用かどうか、ボットかどうか、OS、ブラウザ、User-Agent | 11月30日までに削除 |
 | `raw/stamps.csv` | 押印ごとの参加者、スポット、時刻、何番目か、機体 | 11月30日までに削除 |
 | `raw/deliveries.csv` | 押印ごとの通知結果と時刻 | 11月30日までに削除 |
 | `raw/devices.csv` | 機体ごとの担当スポット、最後のハートビート | 11月30日までに削除 |
@@ -137,7 +138,7 @@ DATABASE_URL="$SUPABASE_SESSION_URL" pnpm --filter @hcd-stamp-rally/server db:ex
 
 - 参加者は `p0001` から作成順の通し番号に置き換える。セッションIDはCookieの値そのものなので、書き出しには出さない。番号は書き出すたびに振り直す
 - CSVはUTF-8（BOM付き）で、Excelでそのまま開ける。User-Agent のように参加者が送った値は、式として解釈されないよう先頭に `'` を付ける場合がある
-- 試験用（一般開放前）のセッションは `raw/` には `is_test=true` として残し、`summary/` からは除く
+- 試験用（一般開放前）のセッションは `raw/` には `is_test=true` として残し、`summary/` からは除く。ボット（LINE・Facebook・Slackのリンクのプレビューと、当日HTMLだけを取りに来たクローラー）も同じく `is_bot=true` として残し、`summary/` からは除く
 
 ### 4-4. そのほか
 

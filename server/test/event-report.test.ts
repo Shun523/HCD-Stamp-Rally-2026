@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildEventExport, classifyUserAgent, parseServerLogs, type ExportRows, type ServerLogs } from "../src/db/event-report.js";
+import { buildEventExport, classifyUserAgent, isBotUserAgent, parseServerLogs, type ExportRows, type ServerLogs } from "../src/db/event-report.js";
 
 const jst = (value: string) => new Date(`2026-10-${value}+09:00`);
 const openAt = jst("31T10:00:00");
@@ -7,6 +7,7 @@ const endAt = jst("31T16:00:00");
 const iphoneSafari = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 const androidChrome = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
 const iphoneLine = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari Line/14.17.0";
+const linePreviewBot = "facebookexternalhit/1.1;line-poker/1.0";
 
 const rows: ExportRows = {
   spots: [
@@ -19,6 +20,7 @@ const rows: ExportRows = {
     { id: "secret-complete", createdAt: jst("31T10:05:00"), userAgent: iphoneSafari },
     { id: "secret-one", createdAt: jst("31T10:20:00"), userAgent: androidChrome },
     { id: "secret-none", createdAt: jst("31T11:00:00"), userAgent: "=HYPERLINK(\"https://example.com\")" },
+    { id: "secret-bot", createdAt: jst("31T12:00:00"), userAgent: linePreviewBot },
     { id: "secret-late", createdAt: jst("31T16:30:00"), userAgent: iphoneLine },
   ],
   stamps: [
@@ -58,10 +60,27 @@ describe("event data export (仕様11章)", () => {
     expect(summary).toContain("acked 2、delivered 1、timeout 1、pending 0");
   });
 
+  it("keeps bot sessions in raw but leaves them out of the summary", () => {
+    const files = build();
+    expect(lines(files.get("raw/sessions.csv"))[0]).toBe("participant,created_at,is_test,is_bot,platform,browser,user_agent");
+    expect(lines(files.get("raw/sessions.csv"))[5]).toBe(`p0005,2026-10-31T12:00:00+09:00,false,true,other,other,${linePreviewBot}`);
+    // リンクのプレビューで作られたセッションは参加者に数えない（参加者・分布・時間帯・ブラウザの数は上のテストと同じ）。
+    expect(files.get("summary/summary.md")).toContain("リンクのプレビューなどのボットのセッション1件も除外しました");
+  });
+
+  it("detects link-preview bots without catching in-app browsers", () => {
+    expect(isBotUserAgent(linePreviewBot)).toBe(true);
+    expect(isBotUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/600.2.5 (KHTML, like Gecko) Version/8.0.2 Safari/600.2.5 facebookexternalhit/1.1 Facebot Twitterbot/1.0")).toBe(true);
+    expect(isBotUserAgent("Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)")).toBe(true);
+    // 名乗りの無いクローラー。当日はページのHTMLだけを取り、画面のファイルもAPIも呼ばなかった。
+    expect(isBotUserAgent("Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0 Chrome/80.0.3987.132 Safari/537.36")).toBe(true);
+    for (const userAgent of [iphoneSafari, androidChrome, iphoneLine]) expect(isBotUserAgent(userAgent)).toBe(false);
+  });
+
   it("replaces cookie session ids with participant numbers in every file", () => {
     const files = build();
     for (const content of files.values()) expect(content).not.toContain("secret-");
-    expect(lines(files.get("raw/sessions.csv"))[1]).toBe(`p0001,2026-10-30T15:00:00+09:00,true,iOS,Safari,"${iphoneSafari}"`);
+    expect(lines(files.get("raw/sessions.csv"))[1]).toBe(`p0001,2026-10-30T15:00:00+09:00,true,false,iOS,Safari,"${iphoneSafari}"`);
     expect(lines(files.get("raw/stamps.csv"))[2]).toBe("2,p0002,spot-01,1,2026-10-31T10:10:00+09:00,2026-10-31T10:10:00+09:00,dev-01");
   });
 

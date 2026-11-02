@@ -102,10 +102,10 @@ export function buildEventExport(rows: ExportRows, options: ExportOptions): Map<
   const files = new Map<string, string>();
 
   files.set("raw/sessions.csv", toCsv(
-    ["participant", "created_at", "is_test", "platform", "browser", "user_agent"],
+    ["participant", "created_at", "is_test", "is_bot", "platform", "browser", "user_agent"],
     rows.sessions.map((session) => {
       const { platform, browser } = classifyUserAgent(session.userAgent);
-      return [participantOf(session.id), toJst(session.createdAt), session.createdAt < options.openAt, platform, browser, session.userAgent];
+      return [participantOf(session.id), toJst(session.createdAt), session.createdAt < options.openAt, isBotUserAgent(session.userAgent), platform, browser, session.userAgent];
     }),
   ));
   files.set("raw/stamps.csv", toCsv(
@@ -137,7 +137,9 @@ export function buildEventExport(rows: ExportRows, options: ExportOptions): Map<
   }
 
   // 仕様4-8: 一般開放より前に発行されたセッションはすべて試験用なので、集計から除く。
-  const participants = rows.sessions.filter((session) => session.createdAt >= options.openAt);
+  // ページを開くだけでセッションが発行されるため、リンクのプレビューを作るボットも除く。
+  const openSessions = rows.sessions.filter((session) => session.createdAt >= options.openAt);
+  const participants = openSessions.filter((session) => !isBotUserAgent(session.userAgent));
   const participantSet = new Set(participants.map((session) => session.id));
   const eventStamps = rows.stamps.filter((stamp) => participantSet.has(stamp.sessionId));
   const eventStampIds = new Set(eventStamps.map((stamp) => stamp.id));
@@ -238,7 +240,8 @@ export function buildEventExport(rows: ExportRows, options: ExportOptions): Map<
     "",
     `書き出し: ${toJst(options.exportedAt)}`,
     "",
-    `対象は一般開放（${toJst(options.openAt)}）以降に発行されたセッションです。それより前の試験用セッション${rows.sessions.length - participants.length}件は除外しました。`,
+    `対象は一般開放（${toJst(options.openAt)}）以降に発行されたセッションです。それより前の試験用セッション${rows.sessions.length - openSessions.length}件は除外しました。` +
+      `リンクのプレビューなどのボットのセッション${openSessions.length - participants.length}件も除外しました。`,
     "",
     "## 参加",
     "",
@@ -308,6 +311,12 @@ export function classifyUserAgent(userAgent: string): { platform: string; browse
               : /CriOS|Chrome\//.test(userAgent) ? "Chrome"
                 : /Safari\//.test(userAgent) ? "Safari" : "other";
   return { platform, browser };
+}
+
+// LINE・Facebook（facebookexternalhit）と Slack のリンクのプレビュー、Firefox 24 と Chrome 80 を同時に名乗るクローラー。
+// どれも当日はページのHTMLだけを取り、画面のファイルもAPIも呼ばなかった。LINEのアプリ内ブラウザ（Line/）はボットではない。
+export function isBotUserAgent(userAgent: string): boolean {
+  return /facebookexternalhit|Slackbot|Firefox\/24\.0 Chrome\//.test(userAgent);
 }
 
 function toCsv(header: string[], rows: Array<Array<string | number | boolean | null>>): string {
