@@ -69,18 +69,19 @@
 ## 3. 10月31日（イベント）
 
 - [ ] 朝: deploy.md 6章の確認。以後は15:30の終了画面のデプロイだけ行う
-- [ ] 15:30（景品交換の締め切り）: 終了画面の版（spec v1.18）を deploy.md 3-2 の手順でデプロイする。イメージは先に作ってよい
+- [x] 15:30（景品交換の締め切り）: 終了画面の版（spec v1.18）を deploy.md 3-2 の手順でデプロイする。10月31日15:38に実施。コミット `5a14924`、イメージ `hcd-stamp-rally:5a14924`、リビジョン `hcd-stamp-rally-00015-wtv`。戻し先は `hcd-stamp-rally-00014-fmp`。デプロイ後に `/api/health` が `db: "ok"`、`/api/status` が `ended: true`、`/admin` が200であることを確認した
 - [ ] 機体の配置。spot-04 と spot-05 は座標を入れ替えたので、`config.toml` の `spot_id` どおり、spot-04 を保健管理センター入口、spot-05 を50周年記念館に置く
 - `/admin` に断が出たら、device.md 5-4 の表でその機体の液晶を見て原因を分ける。機体が故障したら、5-4 の手順で予備機と入れ替え、時刻と機体IDを記録する。予備機は普段は電源を切っておき、`/admin` で `dev-spare-01` が断と出るのは想定どおり
 - [ ] イベント中: `/admin` の画面を1時間ごとなどにスクリーンショットで残す（data.md 4-1）
 - [ ] イベント後: 未送信キューが残った機体を確認し、必要なら再送する（11月1日0:00に機体のキューは自動で消える）。機体ごとのログを保存してから（data.md 4-1）、`sudo poweroff` で電源を切り、終了処理が済んでから外す
-- [ ] 終了後すぐ: Cloud Run を通常設定に戻す（deploy.md 3章）
+- [x] 終了後すぐ: Cloud Run を通常設定に戻す（deploy.md 3章）。11月1日に確かめた時点で、リビジョン `hcd-stamp-rally-00015-wtv` は最小0・最大1・CPUスロットリングありだった
 
 ## 4. イベント後
 
-- [ ] 最終デプロイしたコミットにタグを付ける（data.md 4-4）
-- [ ] 11月中旬まで: Cloud Logging・DB・グラフの書き出し（data.md 4章、`db:export`）
-- [ ] 書き出しを確認したら: Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除してサービスを閉じる（data.md 6章）
+- [x] 最終デプロイしたコミットにタグを付ける（data.md 4-4）。11月1日に `5a14924` へ `event-2026-10-31` を付けた（ローカルのみ）
+- [x] 11月中旬まで: Cloud Logging・DB・グラフの書き出し（data.md 4章、`db:export`）。11月1日に `exports/2026-10-31/` へ書き出した。DBはボットを集計から除く版で書き出し直した。グラフはスクリーンショットの代わりに、1分ごとの数値を `monitoring/` にCSVで残した
+- [ ] 機体ログ（data.md 4-1）は電源を切る前に保存しなかった。次に機体を起動したとき、`journalctl --list-boots` に10月31日の起動が出れば、data.md 4-1 のコマンドに `--until "2026-11-01 00:00"` を足して取れる。出なければログは残っていない
+- [x] 書き出しを確認したら: Cloud Run・Cloud Scheduler・Secret・イメージ・Maps APIキーを削除してサービスを閉じる（data.md 6章）。11月2日に、Cloud Runの設定と操作の記録を `exports/2026-10-31/cloud-run/` に残してから、Cloud Run と Cloud Scheduler を削除し、プロジェクトの課金を無効にした（請求先アカウントとのリンクを解除）。Secret 3つ、イメージのリポジトリ、Cloud Build のバケット、Maps APIキーは残っているが、課金が無効なので料金は発生しない。これらも消すなら、プロジェクトごと削除する（`gcloud projects delete hcd-stamp-rarry-2026`。30日間は復元でき、その後ログも含めて消える）
 - [ ] 11月30日まで: Supabase のプロジェクトと生データ（`exports/` の `raw/`、ログ）を削除し、集計（`summary/`）だけを残す
 - [ ] ローカル試験用のHyper-Vファイアウォールルールを削除する（Windowsの管理者PowerShellで `Remove-NetFirewallHyperVRule -Name HCD-Dev-8787`）
 - 開発中の会話記録に機体キー・DBパスワードの一部・Mapsキーが表示された。サービスを閉じる前に記録を共有するなら、機体キーとDBパスワードを作り直す（閉じた後は不要）
